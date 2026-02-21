@@ -138,6 +138,20 @@ export async function loadVersion(projectId, versionId) {
   return handleResponse(response);
 }
 
+// Duplicate a project — loads full data, saves as new with "(Copy)" suffix
+export async function duplicateProject(id) {
+  const original = await loadProject(id);
+  const copy = {
+    name: `${original.name} (Copy)`,
+    nodes: original.nodes || [],
+    edges: original.edges || [],
+    chatMessages: original.chatMessages || [],
+    viewport: original.viewport || { x: 0, y: 0, zoom: 1 },
+    voiceToneSettings: original.voiceToneSettings || null
+  };
+  return saveProject(copy);
+}
+
 // Scrape content from a URL
 export async function scrapeUrl(url) {
   const auth = await getAuthHeaders();

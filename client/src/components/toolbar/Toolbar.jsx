@@ -3,7 +3,7 @@ import {
   Type, Image, FileText, Youtube, Mic, Globe, LayoutGrid, Code2, StickyNote,
   ZoomIn, ZoomOut, Trash2, Download, Save, Clock, Wand2, AppWindow,
   Sparkles, Palette, HelpCircle,
-  Undo2, Redo2, Search, FileDown, Sun, Moon, Printer, Play, MoreHorizontal
+  Undo2, Redo2, Search, FileDown, Sun, Moon, Printer, Play, MoreHorizontal, Maximize2
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext.jsx';
 
@@ -41,6 +41,7 @@ export default function Toolbar({
   onAutoLayout,
   onExportPdf,
   onPresent,
+  onFitView,
   chatOpen,
   chatSidebarWidth
 }) {
@@ -164,6 +165,13 @@ export default function Toolbar({
           title="Zoom Out"
         >
           <ZoomOut size={14} />
+        </button>
+        <button
+          onClick={onFitView}
+          className="p-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-colors"
+          title="Fit All Nodes"
+        >
+          <Maximize2 size={14} />
         </button>
 
         </div>

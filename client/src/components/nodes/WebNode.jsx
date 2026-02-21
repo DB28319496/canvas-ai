@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Handle, Position, NodeResizer } from 'reactflow';
-import { Globe, X, GripVertical, ChevronDown, ChevronUp, Loader2, ExternalLink } from 'lucide-react';
+import { Globe, X, GripVertical, ChevronDown, ChevronUp, Loader2, ExternalLink, Lock, Unlock } from 'lucide-react';
 
 export default function WebNode({ id, data }) {
   const [urlInput, setUrlInput] = useState('');
@@ -27,7 +27,7 @@ export default function WebNode({ id, data }) {
       <Handle type="target" position={Position.Top} className="!bg-accent !w-2 !h-2" />
 
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100 drag-handle cursor-grab">
+      <div className={`flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100 ${data.locked ? 'cursor-default' : 'drag-handle cursor-grab'}`}>
         <div className="flex items-center gap-2">
           <GripVertical size={14} className="text-gray-400" />
           <Globe size={14} className="text-cyan-500" />
@@ -39,6 +39,13 @@ export default function WebNode({ id, data }) {
           />
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => data.onToggleLock?.(id)}
+            className={`transition-colors ${data.locked ? 'text-amber-500' : 'text-gray-400 hover:text-gray-600'}`}
+            title={data.locked ? 'Unlock node' : 'Lock node'}
+          >
+            {data.locked ? <Lock size={12} /> : <Unlock size={12} />}
+          </button>
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="text-gray-400 hover:text-gray-600 transition-colors"

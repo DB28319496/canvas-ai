@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Handle, Position, NodeResizer } from 'reactflow';
-import { Code2, X, GripVertical, ChevronDown, ChevronUp, Copy, Check, Sparkles } from 'lucide-react';
+import { Code2, X, GripVertical, ChevronDown, ChevronUp, Copy, Check, Sparkles, Lock, Unlock } from 'lucide-react';
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
@@ -42,7 +42,7 @@ export default function CodeNode({ id, data }) {
       <Handle type="target" position={Position.Top} className="!bg-accent !w-2 !h-2" />
 
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100 drag-handle cursor-grab">
+      <div className={`flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100 ${data.locked ? 'cursor-default' : 'drag-handle cursor-grab'}`}>
         <div className="flex items-center gap-2">
           <GripVertical size={14} className="text-gray-400" />
           <Code2 size={14} className="text-orange-500" />
@@ -76,6 +76,13 @@ export default function CodeNode({ id, data }) {
             title="Copy code"
           >
             {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+          </button>
+          <button
+            onClick={() => data.onToggleLock?.(id)}
+            className={`transition-colors ${data.locked ? 'text-amber-500' : 'text-gray-400 hover:text-gray-600'}`}
+            title={data.locked ? 'Unlock node' : 'Lock node'}
+          >
+            {data.locked ? <Lock size={12} /> : <Unlock size={12} />}
           </button>
           <button
             onClick={() => setCollapsed(!collapsed)}

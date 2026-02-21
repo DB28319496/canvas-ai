@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Handle, Position, NodeResizer } from 'reactflow';
-import { Type, X, GripVertical, ChevronDown, ChevronUp, Bold, Italic, Heading2, List, Code, Sparkles } from 'lucide-react';
+import { Type, X, GripVertical, ChevronDown, ChevronUp, Bold, Italic, Heading2, List, Code, Sparkles, Lock, Unlock } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -70,7 +70,7 @@ export default function TextNode({ id, data }) {
       <Handle type="target" position={Position.Top} className="!bg-accent !w-2 !h-2" />
 
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100 drag-handle cursor-grab">
+      <div className={`flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100 ${data.locked ? 'cursor-default' : 'drag-handle cursor-grab'}`}>
         <div className="flex items-center gap-2">
           <GripVertical size={14} className="text-gray-400" />
           <Type size={14} className="text-indigo-500" />
@@ -82,6 +82,13 @@ export default function TextNode({ id, data }) {
           />
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => data.onToggleLock?.(id)}
+            className={`transition-colors ${data.locked ? 'text-amber-500' : 'text-gray-400 hover:text-gray-600'}`}
+            title={data.locked ? 'Unlock node' : 'Lock node'}
+          >
+            {data.locked ? <Lock size={12} /> : <Unlock size={12} />}
+          </button>
           <button
             onClick={(e) => data.onAiAction?.(id, editor?.getText() || data.content || '', data.label || 'Text Note', e)}
             data-tour="ai-sparkles"

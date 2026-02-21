@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Handle, Position, NodeResizer } from 'reactflow';
-import { X, GripVertical, Sparkles } from 'lucide-react';
+import { X, GripVertical, Sparkles, Lock, Unlock } from 'lucide-react';
 
 const stickyColors = [
   { id: 'yellow', bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-900', header: 'bg-yellow-200' },
@@ -30,7 +30,7 @@ export default function StickyNode({ id, data }) {
       <Handle type="target" position={Position.Top} className="!bg-gray-400 !w-2 !h-2" />
 
       {/* Header */}
-      <div className={`flex items-center justify-between px-2 py-1.5 ${color.header} drag-handle cursor-grab`}>
+      <div className={`flex items-center justify-between px-2 py-1.5 ${color.header} ${data.locked ? 'cursor-default' : 'drag-handle cursor-grab'}`}>
         <div className="flex items-center gap-1">
           <GripVertical size={12} className={`${color.text} opacity-40`} />
           {/* Color dots */}
@@ -47,6 +47,13 @@ export default function StickyNode({ id, data }) {
           </div>
         </div>
         <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => data.onToggleLock?.(id)}
+            className={`transition-colors ${data.locked ? 'text-amber-500' : `${color.text} opacity-40 hover:opacity-100`}`}
+            title={data.locked ? 'Unlock node' : 'Lock node'}
+          >
+            {data.locked ? <Lock size={11} /> : <Unlock size={11} />}
+          </button>
           <button
             onClick={(e) => data.onAiAction?.(id, data.content || '', data.label || 'Sticky Note', e)}
             className={`${color.text} opacity-40 hover:opacity-100 transition-opacity`}

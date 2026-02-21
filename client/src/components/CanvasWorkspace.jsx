@@ -287,6 +287,19 @@ export default function CanvasWorkspace({ project, onGoHome }) {
     });
   }, []);
 
+  // Toggle lock on a node
+  const handleToggleLock = useCallback((nodeId) => {
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const locked = !n.data?.locked;
+      return {
+        ...n,
+        draggable: !locked,
+        data: { ...n.data, locked }
+      };
+    }));
+  }, [setNodes]);
+
   // Common data passed to all nodes
   const getNodeData = useCallback((type, label) => ({
     label,
@@ -295,8 +308,9 @@ export default function CanvasWorkspace({ project, onGoHome }) {
     onFileUpload: handleFileUpload,
     onYouTubeSubmit: handleYouTubeSubmit,
     onUrlSubmit: handleUrlSubmit,
-    onAiAction: handleAiAction
-  }), [handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction]);
+    onAiAction: handleAiAction,
+    onToggleLock: handleToggleLock
+  }), [handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction, handleToggleLock]);
 
   // Add a new node to the canvas
   const addNode = useCallback((type, extraData = {}) => {
@@ -365,10 +379,11 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onFileUpload: handleFileUpload,
         onYouTubeSubmit: handleYouTubeSubmit,
         onUrlSubmit: handleUrlSubmit,
-        onAiAction: handleAiAction
+        onAiAction: handleAiAction,
+        onToggleLock: handleToggleLock
       }
     })));
-  }, [handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction, setNodes]);
+  }, [handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction, handleToggleLock, setNodes]);
 
   // Handle node drop into/out of groups
   const onNodeDragStop = useCallback((event, draggedNode) => {
@@ -431,6 +446,10 @@ export default function CanvasWorkspace({ project, onGoHome }) {
 
   const handleZoomOut = useCallback(() => {
     reactFlowInstance.current?.zoomOut();
+  }, []);
+
+  const handleFitView = useCallback(() => {
+    reactFlowInstance.current?.fitView({ padding: 0.2, duration: 400, maxZoom: 1 });
   }, []);
 
   const handleClearCanvas = useCallback(() => {
@@ -599,7 +618,35 @@ export default function CanvasWorkspace({ project, onGoHome }) {
 
     const isImage = file.type.startsWith('image/');
     const isPdf = file.type === 'application/pdf';
-    if (!isImage && !isPdf) return;
+    const isText = file.type.startsWith('text/') || /\.(txt|md|markdown|json|csv|xml|html|css|js|jsx|ts|tsx|py|rb|go|rs|java|c|cpp|h)$/i.test(file.name);
+
+    if (!isImage && !isPdf && !isText) return;
+
+    if (isText) {
+      // Read text file and create a text or code node
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target.result;
+        const isCode = /\.(js|jsx|ts|tsx|py|rb|go|rs|java|c|cpp|h|css|html|xml|json)$/i.test(file.name);
+        const type = isCode ? 'code' : 'text';
+        const dims = defaultDimensions[type] || { width: 320, height: 280 };
+        const newNode = {
+          id: uuidv4(),
+          type,
+          position,
+          data: {
+            ...getNodeData(type, file.name),
+            content,
+            ...(isCode ? { language: file.name.split('.').pop().toLowerCase() } : {})
+          },
+          dragHandle: '.drag-handle',
+          style: { width: dims.width, height: dims.height }
+        };
+        setNodes(nds => [...nds, newNode]);
+      };
+      reader.readAsText(file);
+      return;
+    }
 
     const type = isImage ? 'image' : 'pdf';
     const nodeId = uuidv4();
@@ -785,6 +832,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onOpenHistory={() => setHistoryOpen(true)}
         onAutoLayout={handleAutoLayout}
         onPresent={() => setPresentationOpen(true)}
+        onFitView={handleFitView}
         chatOpen={chatOpen}
         chatSidebarWidth={chatSidebarWidth}
       />

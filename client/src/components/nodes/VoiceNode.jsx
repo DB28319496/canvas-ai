@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Handle, Position, NodeResizer } from 'reactflow';
-import { Mic, X, GripVertical, Square, ChevronDown, ChevronUp } from 'lucide-react';
+import { Mic, X, GripVertical, Square, ChevronDown, ChevronUp, Lock, Unlock } from 'lucide-react';
 
 export default function VoiceNode({ id, data }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -70,7 +70,7 @@ export default function VoiceNode({ id, data }) {
       <Handle type="target" position={Position.Top} className="!bg-accent !w-2 !h-2" />
 
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100 drag-handle cursor-grab">
+      <div className={`flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100 ${data.locked ? 'cursor-default' : 'drag-handle cursor-grab'}`}>
         <div className="flex items-center gap-2">
           <GripVertical size={14} className="text-gray-400" />
           <Mic size={14} className="text-purple-500" />
@@ -82,6 +82,13 @@ export default function VoiceNode({ id, data }) {
           />
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => data.onToggleLock?.(id)}
+            className={`transition-colors ${data.locked ? 'text-amber-500' : 'text-gray-400 hover:text-gray-600'}`}
+            title={data.locked ? 'Unlock node' : 'Lock node'}
+          >
+            {data.locked ? <Lock size={12} /> : <Unlock size={12} />}
+          </button>
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="text-gray-400 hover:text-gray-600 transition-colors"

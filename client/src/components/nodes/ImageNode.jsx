@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Handle, Position, NodeResizer } from 'reactflow';
-import { Image, X, GripVertical, Upload, ChevronDown, ChevronUp, Sparkles, Loader2 } from 'lucide-react';
+import { Image, X, GripVertical, Upload, ChevronDown, ChevronUp, Sparkles, Loader2, Lock, Unlock } from 'lucide-react';
 import { generateImage } from '../../utils/api.js';
 
 export default function ImageNode({ id, data }) {
@@ -61,7 +61,7 @@ export default function ImageNode({ id, data }) {
       <Handle type="target" position={Position.Top} className="!bg-accent !w-2 !h-2" />
 
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100 drag-handle cursor-grab">
+      <div className={`flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100 ${data.locked ? 'cursor-default' : 'drag-handle cursor-grab'}`}>
         <div className="flex items-center gap-2">
           <GripVertical size={14} className="text-gray-400" />
           <Image size={14} className="text-green-500" />
@@ -73,6 +73,13 @@ export default function ImageNode({ id, data }) {
           />
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => data.onToggleLock?.(id)}
+            className={`transition-colors ${data.locked ? 'text-amber-500' : 'text-gray-400 hover:text-gray-600'}`}
+            title={data.locked ? 'Unlock node' : 'Lock node'}
+          >
+            {data.locked ? <Lock size={12} /> : <Unlock size={12} />}
+          </button>
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="text-gray-400 hover:text-gray-600 transition-colors"
