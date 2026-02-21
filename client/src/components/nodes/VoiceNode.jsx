@@ -99,7 +99,7 @@ export default function VoiceNode({ id, data }) {
 
       {/* Content */}
       {!collapsed && (
-        <div className="p-3 flex-1 overflow-auto">
+        <div className="p-3 flex-1 overflow-hidden flex flex-col">
           {/* Record button */}
           <div className="flex justify-center mb-3">
             {isRecording ? (
@@ -129,7 +129,7 @@ export default function VoiceNode({ id, data }) {
 
           {/* Transcript */}
           {(data.transcript || interimText) ? (
-            <div className="max-h-[150px] overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
               <div className="text-xs text-gray-500 mb-1 font-medium">Transcript:</div>
               <div className="text-xs text-gray-700 leading-relaxed">
                 {data.transcript}

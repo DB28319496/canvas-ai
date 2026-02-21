@@ -87,9 +87,9 @@ export default function YouTubeNode({ id, data }) {
       </div>
 
       {/* Content */}
-      {!collapsed && <div className="p-3 flex-1 overflow-auto">
+      {!collapsed && <div className="p-3 flex-1 overflow-hidden flex flex-col">
         {data.thumbnail ? (
-          <div>
+          <div className="flex flex-col flex-1 min-h-0">
             {/* Thumbnail */}
             <a href={data.url} target="_blank" rel="noopener noreferrer">
               <img
@@ -104,7 +104,7 @@ export default function YouTubeNode({ id, data }) {
 
             {/* Transcript section */}
             {data.transcript ? (
-              <div className="mt-2">
+              <div className="mt-2 flex-1 flex flex-col min-h-0">
                 {/* Toggle to manual edit mode */}
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-500 font-medium">Transcript:</span>
@@ -121,20 +121,20 @@ export default function YouTubeNode({ id, data }) {
                     value={data.transcript}
                     onChange={handleManualTranscript}
                     onPaste={handlePaste}
-                    className="w-full min-h-[80px] max-h-[150px] text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:border-indigo-300 resize-none leading-relaxed"
+                    className="w-full flex-1 min-h-[80px] text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:border-indigo-300 resize-none leading-relaxed"
                     placeholder="Edit transcript..."
                   />
                 ) : (
-                  <div className="max-h-[100px] overflow-y-auto">
+                  <div className="flex-1 overflow-y-auto">
                     <div className="text-xs text-gray-600 leading-relaxed">
-                      {data.transcript.slice(0, 300)}{data.transcript.length > 300 ? '...' : ''}
+                      {data.transcript}
                     </div>
                   </div>
                 )}
               </div>
             ) : (
               /* No transcript available — show helpful steps + manual input */
-              <div className="mt-2">
+              <div className="mt-2 flex-1 flex flex-col min-h-0">
                 <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg mb-2">
                   <div className="text-xs font-medium text-amber-800 mb-1.5">
                     Auto-transcript unavailable
@@ -156,12 +156,12 @@ export default function YouTubeNode({ id, data }) {
                     Open on YouTube <ExternalLink size={10} />
                   </a>
                 </div>
-                <div className="relative">
+                <div className="relative flex-1 flex flex-col">
                   <textarea
                     value={data.transcript || ''}
                     onChange={handleManualTranscript}
                     onPaste={handlePaste}
-                    className="w-full min-h-[80px] max-h-[150px] text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-2 pr-8 outline-none focus:border-indigo-300 resize-none leading-relaxed"
+                    className="w-full flex-1 min-h-[80px] text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-2 pr-8 outline-none focus:border-indigo-300 resize-none leading-relaxed"
                     placeholder="Paste transcript, video notes, or a summary of what the video covers..."
                   />
                   <ClipboardPaste size={12} className="absolute top-2.5 right-2.5 text-gray-300 pointer-events-none" />

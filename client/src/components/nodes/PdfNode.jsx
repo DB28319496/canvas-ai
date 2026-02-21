@@ -52,9 +52,9 @@ export default function PdfNode({ id, data }) {
 
       {/* Content */}
       {!collapsed && (
-        <div className="p-3 flex-1 overflow-auto">
+        <div className="p-3 flex-1 overflow-hidden flex flex-col">
           {data.filename ? (
-            <div>
+            <div className="flex flex-col flex-1 min-h-0">
               <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg mb-2">
                 <FileText size={28} className="text-red-400 flex-shrink-0" />
                 <div className="min-w-0">
@@ -67,10 +67,10 @@ export default function PdfNode({ id, data }) {
                 </div>
               </div>
               {data.parsedText && (
-                <div className="mt-2 max-h-[150px] overflow-y-auto">
+                <div className="mt-2 flex-1 overflow-y-auto">
                   <div className="text-xs text-gray-500 mb-1 font-medium">Extracted text:</div>
                   <div className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">
-                    {data.parsedText.slice(0, 500)}{data.parsedText.length > 500 ? '...' : ''}
+                    {data.parsedText}
                   </div>
                 </div>
               )}
