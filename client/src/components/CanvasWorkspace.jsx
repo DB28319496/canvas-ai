@@ -799,12 +799,16 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onConnect={onConnect}
         onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
-        onInit={(instance) => { reactFlowInstance.current = instance; }}
+        onInit={(instance) => {
+          reactFlowInstance.current = instance;
+          // Always fit view when project has nodes for a good initial overview
+          if (project?.nodes?.length > 0) {
+            setTimeout(() => instance.fitView({ padding: 0.3, maxZoom: 0.85, duration: 0 }), 50);
+          }
+        }}
         onDrop={onDrop}
         onDragOver={onDragOver}
-        fitView={project?.nodes?.length > 0 && !project?.viewport}
-        fitViewOptions={{ padding: 0.5, maxZoom: 0.55 }}
-        defaultViewport={project?.viewport || { x: 0, y: 0, zoom: 1 }}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         minZoom={0.1}
         maxZoom={2}
         deleteKeyCode={['Backspace', 'Delete']}
