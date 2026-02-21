@@ -63,6 +63,8 @@ html, body, #root {
 [data-theme="light"] .text-gray-600 { color: #999999 !important; }
 [data-theme="light"] .placeholder-gray-600::placeholder { color: #aaaaaa !important; }
 [data-theme="light"] .bg-canvas-bg\/50, [data-theme="light"] .bg-canvas-bg\/60 { background-color: rgba(245,245,245,0.6) !important; }
+[data-theme="light"] .hover\:bg-canvas-hover:hover { background-color: var(--bg-hover) !important; }
+[data-theme="light"] .bg-canvas-hover { background-color: var(--bg-hover) !important; }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
