@@ -1,30 +1,25 @@
 import { Router } from 'express';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = process.env.UPLOADS_DIR || path.resolve(__dirname, '../../uploads');
 
-// Ensure uploads directory exists
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+let supabase = null;
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+  }
+  return supabase;
 }
 
-// Configure multer storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${uuidv4()}${ext}`);
-  }
-});
-
+// Use memory storage — file stays in req.file.buffer
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
@@ -46,22 +41,40 @@ router.post('/', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    const ext = path.extname(req.file.originalname);
+    const storedName = `${uuidv4()}${ext}`;
+    const storagePath = `${req.userId}/${storedName}`;
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await getSupabase()
+      .storage
+      .from('uploads')
+      .upload(storagePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    // Get the public URL
+    const { data: { publicUrl } } = getSupabase()
+      .storage
+      .from('uploads')
+      .getPublicUrl(storagePath);
+
     const result = {
       filename: req.file.originalname,
-      storedName: req.file.filename,
-      url: fileUrl,
+      storedName,
+      url: publicUrl,
       mimetype: req.file.mimetype,
       size: req.file.size
     };
 
-    // If PDF, parse text content
+    // If PDF, parse text content from the in-memory buffer
     if (req.file.mimetype === 'application/pdf') {
       try {
-        // Dynamic import for pdf-parse (CommonJS module)
         const pdfParse = (await import('pdf-parse')).default;
-        const pdfBuffer = fs.readFileSync(req.file.path);
-        const pdfData = await pdfParse(pdfBuffer);
+        const pdfData = await pdfParse(req.file.buffer);
         result.parsedText = pdfData.text;
         result.pageCount = pdfData.numpages;
       } catch (pdfError) {

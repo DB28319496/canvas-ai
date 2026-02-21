@@ -1,13 +1,9 @@
 import { Router } from 'express';
 import OpenAI from 'openai';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
+import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = process.env.UPLOADS_DIR || path.resolve(__dirname, '../../uploads');
 
 let openaiClient = null;
 function getClient() {
@@ -15,6 +11,17 @@ function getClient() {
     openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
   return openaiClient;
+}
+
+let supabase = null;
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+  }
+  return supabase;
 }
 
 // POST /api/generate-image — Generate an image from a text prompt
@@ -43,21 +50,32 @@ router.post('/', async (req, res) => {
     const imageUrl = response.data[0].url;
     const revisedPrompt = response.data[0].revised_prompt;
 
-    // Download the image and save locally
+    // Download the image
     const imageResponse = await fetch(imageUrl);
     const buffer = Buffer.from(await imageResponse.arrayBuffer());
+
+    // Upload to Supabase Storage
     const filename = `generated-${uuidv4()}.png`;
-    const filePath = path.join(uploadsDir, filename);
+    const storagePath = `${req.userId}/${filename}`;
 
-    // Ensure uploads directory exists
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+    const { error: uploadError } = await getSupabase()
+      .storage
+      .from('uploads')
+      .upload(storagePath, buffer, {
+        contentType: 'image/png',
+        upsert: false
+      });
 
-    fs.writeFileSync(filePath, buffer);
+    if (uploadError) throw uploadError;
+
+    // Get the public URL
+    const { data: { publicUrl } } = getSupabase()
+      .storage
+      .from('uploads')
+      .getPublicUrl(storagePath);
 
     res.json({
-      url: `/uploads/${filename}`,
+      url: publicUrl,
       filename,
       prompt,
       revisedPrompt

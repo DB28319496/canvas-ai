@@ -6,9 +6,6 @@ let handlerPromise;
 function getHandler() {
   if (!handlerPromise) {
     handlerPromise = (async () => {
-      process.env.UPLOADS_DIR = process.env.UPLOADS_DIR || '/tmp/uploads';
-      process.env.PROJECTS_DIR = process.env.PROJECTS_DIR || '/tmp/projects';
-
       const serverless = (await import('serverless-http')).default;
       const { createApp } = await import('../../server/app.js');
       const app = createApp();

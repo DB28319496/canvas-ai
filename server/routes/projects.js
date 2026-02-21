@@ -1,56 +1,38 @@
 import { Router } from 'express';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { v4 as uuidv4 } from 'uuid';
+import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectsDir = process.env.PROJECTS_DIR || path.resolve(__dirname, '../../projects');
-const MAX_VERSIONS = 30;
 
-// Ensure projects directory exists
-if (!fs.existsSync(projectsDir)) {
-  fs.mkdirSync(projectsDir, { recursive: true });
+let supabase = null;
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+  }
+  return supabase;
 }
 
-// Save a version snapshot for a project
-function saveVersionSnapshot(projectId, projectData) {
-  const versionsDir = path.join(projectsDir, `${projectId}_versions`);
-  if (!fs.existsSync(versionsDir)) {
-    fs.mkdirSync(versionsDir, { recursive: true });
-  }
-
-  const timestamp = Date.now();
-  const versionFile = path.join(versionsDir, `${timestamp}.json`);
-  fs.writeFileSync(versionFile, JSON.stringify(projectData));
-
-  // Prune old versions beyond the limit
-  const files = fs.readdirSync(versionsDir)
-    .filter(f => f.endsWith('.json'))
-    .sort();
-  if (files.length > MAX_VERSIONS) {
-    const toDelete = files.slice(0, files.length - MAX_VERSIONS);
-    toDelete.forEach(f => fs.unlinkSync(path.join(versionsDir, f)));
-  }
-}
-
-// GET /api/projects — List all saved projects
-router.get('/', (req, res) => {
+// GET /api/projects — List all projects for the authenticated user
+router.get('/', async (req, res) => {
   try {
-    const files = fs.readdirSync(projectsDir).filter(f => f.endsWith('.json'));
-    const projects = files.map(file => {
-      const data = JSON.parse(fs.readFileSync(path.join(projectsDir, file), 'utf-8'));
-      return {
-        id: data.id,
-        name: data.name,
-        nodeCount: data.nodes?.length || 0,
-        updatedAt: data.updatedAt,
-        createdAt: data.createdAt
-      };
-    });
-    // Sort by most recently updated
-    projects.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    const { data, error } = await getSupabase()
+      .from('projects')
+      .select('id, name, nodes, updated_at, created_at')
+      .eq('user_id', req.userId)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw error;
+
+    const projects = data.map(p => ({
+      id: p.id,
+      name: p.name,
+      nodeCount: p.nodes?.length || 0,
+      updatedAt: p.updated_at,
+      createdAt: p.created_at
+    }));
+
     res.json(projects);
   } catch (error) {
     console.error('List projects error:', error);
@@ -58,42 +40,72 @@ router.get('/', (req, res) => {
   }
 });
 
-// POST /api/projects — Save a canvas as a project
-router.post('/', (req, res) => {
+// POST /api/projects — Save or update a project
+router.post('/', async (req, res) => {
   try {
-    const { id, name, nodes, edges, chatMessages, viewport } = req.body;
+    const { id, name, nodes, edges, chatMessages, viewport, voiceToneSettings } = req.body;
 
     if (!name) {
       return res.status(400).json({ error: 'Project name is required' });
     }
 
-    const projectId = id || uuidv4();
-    const now = new Date().toISOString();
+    const db = getSupabase();
+    let projectId = id;
 
-    const project = {
-      id: projectId,
-      name,
-      nodes: nodes || [],
-      edges: edges || [],
-      chatMessages: chatMessages || [],
-      viewport: viewport || { x: 0, y: 0, zoom: 1 },
-      createdAt: id ? undefined : now, // preserve original createdAt on update
-      updatedAt: now
-    };
+    if (id) {
+      // Update existing project — verify ownership
+      const { data: existing, error: fetchErr } = await db
+        .from('projects')
+        .select('id')
+        .eq('id', id)
+        .eq('user_id', req.userId)
+        .single();
 
-    // If updating, preserve the original createdAt
-    const filePath = path.join(projectsDir, `${projectId}.json`);
-    if (fs.existsSync(filePath)) {
-      const existing = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-      project.createdAt = existing.createdAt;
+      if (fetchErr || !existing) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      const { error: updateErr } = await db
+        .from('projects')
+        .update({
+          name,
+          nodes: nodes || [],
+          edges: edges || [],
+          chat_messages: chatMessages || [],
+          viewport: viewport || { x: 0, y: 0, zoom: 1 },
+          voice_tone_settings: voiceToneSettings || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('user_id', req.userId);
+
+      if (updateErr) throw updateErr;
     } else {
-      project.createdAt = now;
+      // Insert new project
+      const { data: inserted, error: insertErr } = await db
+        .from('projects')
+        .insert({
+          user_id: req.userId,
+          name,
+          nodes: nodes || [],
+          edges: edges || [],
+          chat_messages: chatMessages || [],
+          viewport: viewport || { x: 0, y: 0, zoom: 1 },
+          voice_tone_settings: voiceToneSettings || null
+        })
+        .select('id')
+        .single();
+
+      if (insertErr) throw insertErr;
+      projectId = inserted.id;
     }
 
-    fs.writeFileSync(filePath, JSON.stringify(project, null, 2));
-
     // Save a version snapshot
-    saveVersionSnapshot(projectId, project);
+    const projectData = { name, nodes, edges, chatMessages, viewport, voiceToneSettings };
+    await db.from('project_versions').insert({
+      project_id: projectId,
+      data: projectData
+    });
 
     res.json({ id: projectId, message: 'Project saved' });
   } catch (error) {
@@ -103,16 +115,31 @@ router.post('/', (req, res) => {
 });
 
 // GET /api/projects/:id — Load a specific project
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const filePath = path.join(projectsDir, `${req.params.id}.json`);
+    const { data, error } = await getSupabase()
+      .from('projects')
+      .select('*')
+      .eq('id', req.params.id)
+      .eq('user_id', req.userId)
+      .single();
 
-    if (!fs.existsSync(filePath)) {
+    if (error || !data) {
       return res.status(404).json({ error: 'Project not found' });
     }
 
-    const project = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    res.json(project);
+    // Map DB column names to camelCase for the client
+    res.json({
+      id: data.id,
+      name: data.name,
+      nodes: data.nodes || [],
+      edges: data.edges || [],
+      chatMessages: data.chat_messages || [],
+      viewport: data.viewport || { x: 0, y: 0, zoom: 1 },
+      voiceToneSettings: data.voice_tone_settings || null,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    });
   } catch (error) {
     console.error('Load project error:', error);
     res.status(500).json({ error: 'Failed to load project' });
@@ -120,28 +147,35 @@ router.get('/:id', (req, res) => {
 });
 
 // GET /api/projects/:id/versions — List version history
-router.get('/:id/versions', (req, res) => {
+router.get('/:id/versions', async (req, res) => {
   try {
-    const versionsDir = path.join(projectsDir, `${req.params.id}_versions`);
-    if (!fs.existsSync(versionsDir)) {
-      return res.json([]);
+    // Verify ownership first
+    const { data: project, error: projErr } = await getSupabase()
+      .from('projects')
+      .select('id')
+      .eq('id', req.params.id)
+      .eq('user_id', req.userId)
+      .single();
+
+    if (projErr || !project) {
+      return res.status(404).json({ error: 'Project not found' });
     }
 
-    const files = fs.readdirSync(versionsDir)
-      .filter(f => f.endsWith('.json'))
-      .sort((a, b) => b.localeCompare(a)); // newest first
+    const { data, error } = await getSupabase()
+      .from('project_versions')
+      .select('id, data, created_at')
+      .eq('project_id', req.params.id)
+      .order('created_at', { ascending: false });
 
-    const versions = files.map(file => {
-      const timestamp = parseInt(file.replace('.json', ''), 10);
-      const data = JSON.parse(fs.readFileSync(path.join(versionsDir, file), 'utf-8'));
-      return {
-        id: timestamp,
-        timestamp: new Date(timestamp).toISOString(),
-        nodeCount: data.nodes?.length || 0,
-        edgeCount: data.edges?.length || 0,
-        name: data.name
-      };
-    });
+    if (error) throw error;
+
+    const versions = data.map(v => ({
+      id: v.id,
+      timestamp: v.created_at,
+      nodeCount: v.data?.nodes?.length || 0,
+      edgeCount: v.data?.edges?.length || 0,
+      name: v.data?.name || ''
+    }));
 
     res.json(versions);
   } catch (error) {
@@ -151,43 +185,60 @@ router.get('/:id/versions', (req, res) => {
 });
 
 // GET /api/projects/:id/versions/:versionId — Load a specific version
-router.get('/:id/versions/:versionId', (req, res) => {
+router.get('/:id/versions/:versionId', async (req, res) => {
   try {
-    const versionFile = path.join(
-      projectsDir,
-      `${req.params.id}_versions`,
-      `${req.params.versionId}.json`
-    );
+    // Verify ownership
+    const { data: project, error: projErr } = await getSupabase()
+      .from('projects')
+      .select('id')
+      .eq('id', req.params.id)
+      .eq('user_id', req.userId)
+      .single();
 
-    if (!fs.existsSync(versionFile)) {
+    if (projErr || !project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    const { data, error } = await getSupabase()
+      .from('project_versions')
+      .select('data, created_at')
+      .eq('id', req.params.versionId)
+      .eq('project_id', req.params.id)
+      .single();
+
+    if (error || !data) {
       return res.status(404).json({ error: 'Version not found' });
     }
 
-    const version = JSON.parse(fs.readFileSync(versionFile, 'utf-8'));
-    res.json(version);
+    // Return the version data in the same format the client expects
+    const versionData = data.data || {};
+    res.json({
+      id: req.params.id,
+      name: versionData.name,
+      nodes: versionData.nodes || [],
+      edges: versionData.edges || [],
+      chatMessages: versionData.chatMessages || [],
+      viewport: versionData.viewport || { x: 0, y: 0, zoom: 1 },
+      voiceToneSettings: versionData.voiceToneSettings || null,
+      createdAt: data.created_at,
+      updatedAt: data.created_at
+    });
   } catch (error) {
     console.error('Load version error:', error);
     res.status(500).json({ error: 'Failed to load version' });
   }
 });
 
-// DELETE /api/projects/:id — Delete a project
-router.delete('/:id', (req, res) => {
+// DELETE /api/projects/:id — Delete a project (versions cascade automatically)
+router.delete('/:id', async (req, res) => {
   try {
-    const filePath = path.join(projectsDir, `${req.params.id}.json`);
+    const { error } = await getSupabase()
+      .from('projects')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('user_id', req.userId);
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-
-    fs.unlinkSync(filePath);
-
-    // Also delete version history
-    const versionsDir = path.join(projectsDir, `${req.params.id}_versions`);
-    if (fs.existsSync(versionsDir)) {
-      fs.readdirSync(versionsDir).forEach(f => fs.unlinkSync(path.join(versionsDir, f)));
-      fs.rmdirSync(versionsDir);
-    }
+    if (error) throw error;
 
     res.json({ message: 'Project deleted' });
   } catch (error) {

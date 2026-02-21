@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Plus, Trash2, FolderOpen, Loader2, Clock, Layers, Sun, Moon, BookOpen, Video, FileText, Mic as MicIcon } from 'lucide-react';
+import { Sparkles, Plus, Trash2, FolderOpen, Loader2, Clock, Layers, Sun, Moon, BookOpen, Video, FileText, Mic as MicIcon, LogOut } from 'lucide-react';
 import { listProjects, deleteProject } from '../../utils/api.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const canvasTemplates = [
   {
@@ -99,6 +100,7 @@ export default function Dashboard({ onNewProject, onLoadProject }) {
   const [error, setError] = useState(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { user, signOut } = useAuth();
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -149,6 +151,9 @@ export default function Dashboard({ onNewProject, onLoadProject }) {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {user && (
+            <span className="text-xs text-gray-500 hidden sm:inline">{user.email}</span>
+          )}
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
@@ -156,6 +161,13 @@ export default function Dashboard({ onNewProject, onLoadProject }) {
             title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           >
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button
+            onClick={signOut}
+            className="p-2 text-gray-400 hover:text-red-400 bg-canvas-panel border border-canvas-border rounded-lg transition-colors"
+            title="Sign out"
+          >
+            <LogOut size={16} />
           </button>
           <button
             onClick={() => setShowTemplates(!showTemplates)}
