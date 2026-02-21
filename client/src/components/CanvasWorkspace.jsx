@@ -49,6 +49,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [aiQuickAction, setAiQuickAction] = useState(null); // { nodeId, content, label, position }
   const [presentationOpen, setPresentationOpen] = useState(false);
+  const [saveToast, setSaveToast] = useState(null); // 'saved' | 'error' | null
   const [voiceToneSettings, setVoiceToneSettings] = useState(
     project?.voiceToneSettings || { preset: [], customDescription: '', writingSamples: '' }
   );
@@ -546,13 +547,11 @@ export default function CanvasWorkspace({ project, onGoHome }) {
       });
 
       setProjectId(result.id);
-      const btn = document.querySelector('[title="Save Project"]');
-      if (btn) {
-        btn.classList.add('!text-green-400');
-        setTimeout(() => btn.classList.remove('!text-green-400'), 1500);
-      }
+      setSaveToast('saved');
+      setTimeout(() => setSaveToast(null), 2000);
     } catch (error) {
-      alert(`Save failed: ${error.message}`);
+      setSaveToast('error');
+      setTimeout(() => setSaveToast(null), 3000);
     }
   }, [nodes, edges, projectId, projectName, voiceToneSettings]);
 
@@ -882,6 +881,17 @@ export default function CanvasWorkspace({ project, onGoHome }) {
       />
 
       {/* Onboarding tour */}
+      {/* Save toast notification */}
+      {saveToast && (
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg transition-all duration-300 ${
+          saveToast === 'saved'
+            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+            : 'bg-red-500/15 text-red-400 border border-red-500/20'
+        }`}>
+          {saveToast === 'saved' ? 'Project saved' : 'Save failed — try again'}
+        </div>
+      )}
+
       <OnboardingTour
         isActive={tourActive}
         onAddNode={addNode}
