@@ -167,6 +167,29 @@ html, body, #root {
   height: 0;
 }
 
+/* Node resizer handles */
+.react-flow__resize-control.handle {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 2px !important;
+  background-color: #6366f1 !important;
+  border: 1.5px solid #fff !important;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.react-flow__node:hover .react-flow__resize-control.handle,
+.react-flow__node.selected .react-flow__resize-control.handle {
+  opacity: 1;
+}
+.react-flow__resize-control.line {
+  border-color: transparent !important;
+  transition: border-color 0.15s ease;
+}
+.react-flow__node:hover .react-flow__resize-control.line,
+.react-flow__node.selected .react-flow__resize-control.line {
+  border-color: #6366f1 !important;
+}
+
 /* Streaming cursor for chat */
 .streaming-cursor {
   display: inline-block;

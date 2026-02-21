@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, NodeResizer } from 'reactflow';
 import { Code2, X, GripVertical, ChevronDown, ChevronUp, Copy, Check, Sparkles } from 'lucide-react';
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
@@ -37,7 +37,8 @@ export default function CodeNode({ id, data }) {
   }, [data.content]);
 
   return (
-    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-[380px] overflow-hidden">
+    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-full h-full overflow-hidden flex flex-col">
+      <NodeResizer minWidth={250} minHeight={180} />
       <Handle type="target" position={Position.Top} className="!bg-accent !w-2 !h-2" />
 
       {/* Header */}
@@ -94,7 +95,7 @@ export default function CodeNode({ id, data }) {
       {/* Content */}
       {!collapsed && (
         <div
-          className="relative"
+          className="relative flex-1 overflow-auto"
           onDoubleClick={() => setIsEditing(true)}
         >
           {isEditing ? (
@@ -103,12 +104,12 @@ export default function CodeNode({ id, data }) {
               onChange={handleChange}
               onBlur={() => { if (data.content?.trim()) setIsEditing(false); }}
               placeholder="// Write your code here..."
-              className="w-full min-h-[140px] text-xs text-gray-100 bg-[#1e1e2e] px-3 py-3 outline-none resize-none font-mono leading-relaxed"
+              className="w-full h-full text-xs text-gray-100 bg-[#1e1e2e] px-3 py-3 outline-none resize-none font-mono leading-relaxed"
               autoFocus
               spellCheck={false}
             />
           ) : (
-            <div className="max-h-[300px] overflow-auto">
+            <div className="h-full overflow-auto">
               <SyntaxHighlighter
                 language={language}
                 style={atomOneDark}

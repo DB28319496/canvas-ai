@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, NodeResizer } from 'reactflow';
 import { Code, X, GripVertical, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 
 export default function EmbedNode({ id, data }) {
@@ -21,7 +21,8 @@ export default function EmbedNode({ id, data }) {
   }, [handleSubmit]);
 
   return (
-    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-[420px] overflow-hidden">
+    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-full h-full overflow-hidden flex flex-col">
+      <NodeResizer minWidth={280} minHeight={200} />
       <Handle type="target" position={Position.Top} className="!bg-accent !w-2 !h-2" />
 
       {/* Header */}
@@ -65,9 +66,9 @@ export default function EmbedNode({ id, data }) {
 
       {/* Content */}
       {!collapsed && (
-        <div>
+        <div className="flex-1 overflow-hidden flex flex-col">
           {data.url ? (
-            <div className="relative bg-gray-100" style={{ height: 300 }}>
+            <div className="relative bg-gray-100 flex-1" style={{ minHeight: 200 }}>
               <iframe
                 src={data.url}
                 title={data.label || 'Embed'}

@@ -10,9 +10,41 @@ const models = [
   { id: 'opus', label: 'Opus', desc: 'Most capable' }
 ];
 
-export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneSettings, onCreateNode }) {
+export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneSettings, onCreateNode, onWidthChange }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [sidebarWidth, setSidebarWidth] = useState(380);
+  const isResizingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(380);
+
+  const handleResizeMouseDown = useCallback((e) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    startXRef.current = e.clientX;
+    startWidthRef.current = sidebarWidth;
+
+    const handleMouseMove = (moveEvent) => {
+      if (!isResizingRef.current) return;
+      const delta = startXRef.current - moveEvent.clientX;
+      const newWidth = Math.min(700, Math.max(380, startWidthRef.current + delta));
+      setSidebarWidth(newWidth);
+      onWidthChange?.(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      isResizingRef.current = false;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [sidebarWidth, onWidthChange]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState(null);
@@ -171,10 +203,21 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
       {/* Sidebar */}
       <div
         data-tour="chat-sidebar"
-        className={`fixed right-0 top-0 h-full z-20 bg-canvas-panel border-l border-canvas-border flex flex-col transition-all duration-300 ${
-          isOpen ? 'w-[380px]' : 'w-0 overflow-hidden'
+        className={`fixed right-0 top-0 h-full z-20 bg-canvas-panel border-l border-canvas-border flex flex-col ${
+          isOpen ? '' : 'w-0 overflow-hidden transition-all duration-300'
         }`}
+        style={isOpen ? { width: sidebarWidth } : undefined}
       >
+        {/* Resize drag handle */}
+        {isOpen && (
+          <div
+            onMouseDown={handleResizeMouseDown}
+            className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize z-30 group"
+          >
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-accent/30" />
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-gray-600 group-hover:bg-accent transition-colors ml-px" />
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-canvas-border flex-shrink-0">
           <div className="flex items-center gap-2">

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, NodeResizer } from 'reactflow';
 import { X, GripVertical, Sparkles } from 'lucide-react';
 
 const stickyColors = [
@@ -25,7 +25,8 @@ export default function StickyNode({ id, data }) {
   }, [id, data]);
 
   return (
-    <div className={`canvas-node ${color.bg} rounded-lg shadow-md border ${color.border} w-[200px] overflow-hidden`}>
+    <div className={`canvas-node ${color.bg} rounded-lg shadow-md border ${color.border} w-full h-full overflow-hidden flex flex-col`}>
+      <NodeResizer minWidth={140} minHeight={100} />
       <Handle type="target" position={Position.Top} className="!bg-gray-400 !w-2 !h-2" />
 
       {/* Header */}
@@ -63,12 +64,12 @@ export default function StickyNode({ id, data }) {
       </div>
 
       {/* Content */}
-      <div className="p-2">
+      <div className="p-2 flex-1 overflow-auto">
         <textarea
           value={data.content || ''}
           onChange={handleChange}
           placeholder="Quick note..."
-          className={`w-full min-h-[80px] text-xs ${color.text} ${color.bg} border-none outline-none resize-none leading-relaxed placeholder:${color.text} placeholder:opacity-40`}
+          className={`w-full h-full text-xs ${color.text} ${color.bg} border-none outline-none resize-none leading-relaxed placeholder:${color.text} placeholder:opacity-40`}
         />
       </div>
 

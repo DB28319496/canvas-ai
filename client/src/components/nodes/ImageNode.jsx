@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, NodeResizer } from 'reactflow';
 import { Image, X, GripVertical, Upload, ChevronDown, ChevronUp, Sparkles, Loader2 } from 'lucide-react';
 import { generateImage } from '../../utils/api.js';
 
@@ -56,7 +56,8 @@ export default function ImageNode({ id, data }) {
   }, [id, data, genPrompt, generating]);
 
   return (
-    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-[320px] overflow-hidden">
+    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-full h-full overflow-hidden flex flex-col">
+      <NodeResizer minWidth={200} minHeight={150} />
       <Handle type="target" position={Position.Top} className="!bg-accent !w-2 !h-2" />
 
       {/* Header */}
@@ -89,13 +90,13 @@ export default function ImageNode({ id, data }) {
 
       {/* Content */}
       {!collapsed && (
-        <div className="p-3">
+        <div className="p-3 flex-1 overflow-auto">
           {data.imageUrl ? (
             <div className="relative group">
               <img
                 src={data.imageUrl}
                 alt={data.label || 'Image'}
-                className="w-full rounded-lg object-cover max-h-[240px]"
+                className="w-full rounded-lg object-contain max-h-full"
               />
               <div className="text-xs text-gray-500 mt-2 truncate">
                 {data.filename || 'image'}

@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
+import { NodeResizer } from 'reactflow';
 import { LayoutGrid, X, GripVertical } from 'lucide-react';
 
-export default function GroupNode({ id, data }) {
+export default function GroupNode({ id, data, selected }) {
   const [label, setLabel] = useState(data.label || 'Group');
 
   const handleLabelChange = useCallback((e) => {
@@ -10,10 +11,8 @@ export default function GroupNode({ id, data }) {
   }, [id, data]);
 
   return (
-    <div
-      className="rounded-2xl border-2 border-dashed border-amber-400/40 bg-amber-400/5"
-      style={{ width: data.style?.width || 500, height: data.style?.height || 400 }}
-    >
+    <div className="rounded-2xl border-2 border-dashed border-amber-400/40 bg-amber-400/5 w-full h-full">
+      <NodeResizer minWidth={300} minHeight={250} isVisible={selected} lineStyle={{ borderColor: '#f59e0b' }} handleStyle={{ backgroundColor: '#f59e0b', border: '1.5px solid #fff' }} />
       {/* Header bar */}
       <div className="flex items-center justify-between px-3 py-2 drag-handle cursor-grab">
         <div className="flex items-center gap-2">

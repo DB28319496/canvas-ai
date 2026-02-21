@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, NodeResizer } from 'reactflow';
 import { Type, X, GripVertical, ChevronDown, ChevronUp, Bold, Italic, Heading2, List, Code, Sparkles } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -65,7 +65,8 @@ export default function TextNode({ id, data }) {
   }, [id, data]);
 
   return (
-    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-[320px] overflow-hidden">
+    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-full h-full overflow-hidden flex flex-col">
+      <NodeResizer minWidth={200} minHeight={150} />
       <Handle type="target" position={Position.Top} className="!bg-accent !w-2 !h-2" />
 
       {/* Header */}
@@ -105,7 +106,7 @@ export default function TextNode({ id, data }) {
 
       {/* Content */}
       {!collapsed && (
-        <div>
+        <div className="flex-1 overflow-auto">
           <MiniToolbar editor={editor} />
           <EditorContent editor={editor} />
         </div>

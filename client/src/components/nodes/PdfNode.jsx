@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, NodeResizer } from 'reactflow';
 import { FileText, X, GripVertical, Upload, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function PdfNode({ id, data }) {
@@ -18,7 +18,8 @@ export default function PdfNode({ id, data }) {
   }, [id, data]);
 
   return (
-    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-[320px] overflow-hidden">
+    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-full h-full overflow-hidden flex flex-col">
+      <NodeResizer minWidth={200} minHeight={150} />
       <Handle type="target" position={Position.Top} className="!bg-accent !w-2 !h-2" />
 
       {/* Header */}
@@ -51,7 +52,7 @@ export default function PdfNode({ id, data }) {
 
       {/* Content */}
       {!collapsed && (
-        <div className="p-3">
+        <div className="p-3 flex-1 overflow-auto">
           {data.filename ? (
             <div>
               <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg mb-2">

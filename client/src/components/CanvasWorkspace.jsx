@@ -8,6 +8,7 @@ import ReactFlow, {
   addEdge
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import '@reactflow/node-resizer/dist/style.css';
 import { v4 as uuidv4 } from 'uuid';
 import { nodeTypes } from './nodes/index.js';
 import Toolbar from './toolbar/Toolbar.jsx';
@@ -22,10 +23,24 @@ import { exportAsPdf } from '../utils/exportPdf.js';
 import AIQuickActions from './ai/AIQuickActions.jsx';
 import PresentationMode from './presentation/PresentationMode.jsx';
 
+const defaultDimensions = {
+  text:    { width: 320, height: 280 },
+  image:   { width: 320, height: 320 },
+  pdf:     { width: 320, height: 300 },
+  youtube: { width: 320, height: 360 },
+  voice:   { width: 320, height: 260 },
+  web:     { width: 320, height: 300 },
+  code:    { width: 380, height: 320 },
+  sticky:  { width: 200, height: 180 },
+  embed:   { width: 420, height: 380 },
+  group:   { width: 500, height: 400 }
+};
+
 export default function CanvasWorkspace({ project, onGoHome }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(project?.nodes || []);
   const [edges, setEdges, onEdgesChange] = useEdgesState(project?.edges || []);
   const [chatOpen, setChatOpen] = useState(true);
+  const [chatSidebarWidth, setChatSidebarWidth] = useState(380);
   const [projectName, setProjectName] = useState(project?.name || 'Untitled Project');
   const [projectId, setProjectId] = useState(project?.id || null);
   const [tourActive, setTourActive] = useState(false);
@@ -39,6 +54,22 @@ export default function CanvasWorkspace({ project, onGoHome }) {
   );
   const reactFlowWrapper = useRef(null);
   const reactFlowInstance = useRef(null);
+
+  // Ensure loaded nodes have style dimensions for resizability
+  useEffect(() => {
+    setNodes(nds => {
+      let changed = false;
+      const updated = nds.map(node => {
+        if (!node.style?.width || !node.style?.height) {
+          changed = true;
+          const dims = defaultDimensions[node.type] || { width: 320, height: 280 };
+          return { ...node, style: { ...node.style, width: node.style?.width || dims.width, height: node.style?.height || dims.height } };
+        }
+        return node;
+      });
+      return changed ? updated : nds;
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Undo/Redo history
   const historyRef = useRef([]);
@@ -287,7 +318,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
       const wrapper = reactFlowWrapper.current;
       if (wrapper) {
         const bounds = wrapper.getBoundingClientRect();
-        const centerX = (bounds.width - (chatOpen ? 380 : 0)) / 2;
+        const centerX = (bounds.width - (chatOpen ? chatSidebarWidth : 0)) / 2;
         const centerY = bounds.height / 2;
         position = rfInstance.screenToFlowPosition({
           x: centerX + (Math.random() - 0.5) * 200,
@@ -296,6 +327,8 @@ export default function CanvasWorkspace({ project, onGoHome }) {
       }
     }
 
+    const dims = defaultDimensions[type] || { width: 320, height: 280 };
+
     const newNode = {
       id: uuidv4(),
       type,
@@ -303,17 +336,14 @@ export default function CanvasWorkspace({ project, onGoHome }) {
       data: {
         ...getNodeData(type, extraData.label || labels[type]),
         ...extraData,
-        ...(type === 'group' ? { style: { width: 500, height: 400 } } : {})
       },
       dragHandle: '.drag-handle',
-      ...(type === 'group' ? {
-        style: { width: 500, height: 400 },
-        zIndex: -1
-      } : {})
+      style: { width: dims.width, height: dims.height },
+      ...(type === 'group' ? { zIndex: -1 } : {})
     };
 
     setNodes(nds => type === 'group' ? [newNode, ...nds] : [...nds, newNode]);
-  }, [setNodes, getNodeData, chatOpen]);
+  }, [setNodes, getNodeData, chatOpen, chatSidebarWidth]);
 
   // Handle AI-created nodes from chat
   const handleCreateNodeFromChat = useCallback((nodeData) => {
@@ -575,6 +605,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
     const type = isImage ? 'image' : 'pdf';
     const nodeId = uuidv4();
 
+    const dims = defaultDimensions[type] || { width: 320, height: 300 };
     const newNode = {
       id: nodeId,
       type,
@@ -583,7 +614,8 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         ...getNodeData(type, isImage ? 'Image' : 'PDF Document'),
         loading: true
       },
-      dragHandle: '.drag-handle'
+      dragHandle: '.drag-handle',
+      style: { width: dims.width, height: dims.height }
     };
 
     setNodes(nds => [...nds, newNode]);
@@ -795,6 +827,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onToggle={() => setChatOpen(prev => !prev)}
         voiceToneSettings={voiceToneSettings}
         onCreateNode={handleCreateNodeFromChat}
+        onWidthChange={setChatSidebarWidth}
       />
 
       {/* Search panel */}

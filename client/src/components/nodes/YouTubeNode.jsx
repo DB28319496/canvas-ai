@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, NodeResizer } from 'reactflow';
 import { Youtube, X, GripVertical, Link, Loader2, PenLine, ExternalLink, ClipboardPaste, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function YouTubeNode({ id, data }) {
@@ -54,7 +54,8 @@ export default function YouTubeNode({ id, data }) {
   const noTranscript = data.thumbnail && !data.transcript;
 
   return (
-    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-[320px] overflow-hidden">
+    <div className="canvas-node bg-white rounded-xl shadow-lg border border-gray-200 w-full h-full overflow-hidden flex flex-col">
+      <NodeResizer minWidth={200} minHeight={200} />
       <Handle type="target" position={Position.Top} className="!bg-accent !w-2 !h-2" />
 
       {/* Header */}
@@ -86,7 +87,7 @@ export default function YouTubeNode({ id, data }) {
       </div>
 
       {/* Content */}
-      {!collapsed && <div className="p-3">
+      {!collapsed && <div className="p-3 flex-1 overflow-auto">
         {data.thumbnail ? (
           <div>
             {/* Thumbnail */}
