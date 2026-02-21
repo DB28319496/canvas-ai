@@ -1,10 +1,10 @@
 [build]
-  command = "cd server && npm install && cd ../client && npm install && npx vite build"
+  command = "npm install && cd server && npm install && cd ../client && npm install && npx vite build"
   publish = "client/dist"
   functions = "netlify/functions"
 
 [functions]
-  node_bundler = "esbuild"
+  node_bundler = "nft"
   included_files = ["server/**"]
 
 # Redirect all /api/* requests to the serverless function
