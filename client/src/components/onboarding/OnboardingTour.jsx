@@ -42,7 +42,7 @@ const TOUR_STEPS = [
     description: 'Drag to pan, scroll to zoom, and drop files directly onto the canvas. Connect nodes with edges to build visual relationships — the AI understands these connections.',
     shortcuts: ['Scroll to zoom', 'Drag to pan'],
   },
-  // Step 3: Demo node (auto-creates text node)
+  // Step 3: Demo node (auto-creates text node if none exist)
   {
     id: 'demo-node',
     type: 'spotlight',
@@ -202,6 +202,7 @@ export default function OnboardingTour({ onAddNode, onOpenChat, onExpandPrompts,
   const [targetRect, setTargetRect] = useState(null);
   const [visible, setVisible] = useState(false);
   const rafRef = useRef(null);
+  const demoNodeCreated = useRef(false);
 
   const currentStep = TOUR_STEPS[step];
   const totalSteps = TOUR_STEPS.length;
@@ -211,6 +212,7 @@ export default function OnboardingTour({ onAddNode, onOpenChat, onExpandPrompts,
     if (isActive) {
       setStep(0);
       setVisible(true);
+      demoNodeCreated.current = false;
     } else {
       setVisible(false);
     }
@@ -244,9 +246,10 @@ export default function OnboardingTour({ onAddNode, onOpenChat, onExpandPrompts,
   useEffect(() => {
     if (visible) {
       // Run step actions
-      if (currentStep?.action === 'createTextNode') {
+      if (currentStep?.action === 'createTextNode' && !demoNodeCreated.current) {
         const existingNode = document.querySelector('.react-flow__node');
         if (!existingNode) {
+          demoNodeCreated.current = true;
           onAddNode?.('text');
           setTimeout(() => {
             rafRef.current = requestAnimationFrame(updateTargetRect);
