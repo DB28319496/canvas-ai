@@ -801,7 +801,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onDrop={onDrop}
         onDragOver={onDragOver}
         fitView={project?.nodes?.length > 0 && !project?.viewport}
-        fitViewOptions={{ padding: 0.3, maxZoom: 0.85 }}
+        fitViewOptions={{ padding: 0.5, maxZoom: 0.55 }}
         defaultViewport={project?.viewport || { x: 0, y: 0, zoom: 1 }}
         minZoom={0.1}
         maxZoom={2}
