@@ -84,6 +84,7 @@ export default function TextNode({ id, data }) {
         <div className="flex items-center gap-1">
           <button
             onClick={(e) => data.onAiAction?.(id, editor?.getText() || data.content || '', data.label || 'Text Note', e)}
+            data-tour="ai-sparkles"
             className="text-gray-400 hover:text-accent transition-colors"
             title="AI Actions"
           >

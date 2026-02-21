@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Zap, ChevronDown, ChevronUp, FileText, Video, BookOpen, PenLine, BarChart3, MessageSquare } from 'lucide-react';
 
 const templates = [
@@ -43,8 +43,15 @@ const templates = [
 export default function PromptTemplates({ onSelectTemplate }) {
   const [expanded, setExpanded] = useState(false);
 
+  // Allow tour to auto-expand prompts
+  useEffect(() => {
+    const handler = () => setExpanded(true);
+    window.addEventListener('expandPromptTemplates', handler);
+    return () => window.removeEventListener('expandPromptTemplates', handler);
+  }, []);
+
   return (
-    <div className="px-4 pb-2">
+    <div data-tour="quick-prompts" className="px-4 pb-2">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors w-full"

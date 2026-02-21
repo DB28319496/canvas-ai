@@ -886,6 +886,9 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         isActive={tourActive}
         onAddNode={addNode}
         onOpenChat={() => setChatOpen(true)}
+        onExpandPrompts={() => {
+          window.dispatchEvent(new CustomEvent('expandPromptTemplates'));
+        }}
         onComplete={() => setTourActive(false)}
       />
 

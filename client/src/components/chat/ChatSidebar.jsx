@@ -232,6 +232,7 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
             <div className="relative">
               <button
                 onClick={() => setShowModelPicker(!showModelPicker)}
+                data-tour="model-selector"
                 className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-gray-400 bg-canvas-bg border border-canvas-border rounded-lg hover:text-white hover:border-gray-600 transition-colors"
               >
                 <Cpu size={11} />
@@ -339,6 +340,7 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
           <div className="flex items-end gap-2">
             <button
               onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+              data-tour="web-search"
               title={webSearchEnabled ? 'Web search enabled' : 'Enable web search'}
               className={`flex-shrink-0 p-3 rounded-xl border transition-colors ${
                 webSearchEnabled

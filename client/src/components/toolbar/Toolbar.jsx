@@ -122,7 +122,8 @@ export default function Toolbar({
 
       {/* Right: Primary actions + More menu */}
       <div className="flex items-center gap-0.5 flex-shrink-0">
-        {/* Undo/Redo */}
+        {/* Undo/Redo/Search/Zoom */}
+        <div data-tour="toolbar-actions" className="flex items-center gap-0.5">
         <button
           onClick={onUndo}
           className="p-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-colors"
@@ -165,6 +166,8 @@ export default function Toolbar({
           <ZoomOut size={14} />
         </button>
 
+        </div>
+
         <div className="w-px h-5 bg-canvas-border mx-0.5" />
 
         {/* Save */}
@@ -184,6 +187,7 @@ export default function Toolbar({
         <div className="relative" ref={moreRef}>
           <button
             onClick={() => { setShowMore(!showMore); setShowLayoutMenu(false); }}
+            data-tour="more-menu"
             className={`p-1.5 rounded-lg transition-colors ${
               showMore ? 'text-white bg-canvas-hover' : 'text-gray-400 hover:text-white hover:bg-canvas-hover'
             }`}
