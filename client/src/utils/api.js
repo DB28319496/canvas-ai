@@ -152,6 +152,17 @@ export async function duplicateProject(id) {
   return saveProject(copy);
 }
 
+// Generate structured notes from a transcript
+export async function generateNotes(transcript, title, url) {
+  const auth = await getAuthHeaders();
+  const response = await fetch(`${API_BASE}/generate-notes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...auth },
+    body: JSON.stringify({ transcript, title, url })
+  });
+  return handleResponse(response);
+}
+
 // Scrape content from a URL
 export async function scrapeUrl(url) {
   const auth = await getAuthHeaders();

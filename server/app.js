@@ -7,6 +7,7 @@ import projectRoutes from './routes/projects.js';
 import scrapeRoutes from './routes/scrape.js';
 import generateImageRoutes from './routes/generate-image.js';
 import webSearchRoutes from './routes/web-search.js';
+import generateNotesRoutes from './routes/generate-notes.js';
 import { requireAuth } from './middleware/auth.js';
 
 export function createApp() {
@@ -25,6 +26,7 @@ export function createApp() {
   app.use('/api/youtube', youtubeRoutes);
   app.use('/api/scrape', scrapeRoutes);
   app.use('/api/web-search', webSearchRoutes);
+  app.use('/api/generate-notes', generateNotesRoutes);
 
   // Protected routes (auth required)
   app.use('/api/projects', requireAuth, projectRoutes);

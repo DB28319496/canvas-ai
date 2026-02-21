@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { nodeTypes } from './nodes/index.js';
 import Toolbar from './toolbar/Toolbar.jsx';
 import ChatSidebar from './chat/ChatSidebar.jsx';
-import { uploadFile, fetchYouTubeData, scrapeUrl, saveProject } from '../utils/api.js';
+import { uploadFile, fetchYouTubeData, scrapeUrl, saveProject, generateNotes } from '../utils/api.js';
 import OnboardingTour, { shouldShowOnboarding, resetOnboarding } from './onboarding/OnboardingTour.jsx';
 import VoiceTonePanel from './voicetone/VoiceTonePanel.jsx';
 import SearchPanel from './search/SearchPanel.jsx';
@@ -79,7 +79,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
 
   const pushHistory = useCallback(() => {
     if (isUndoRedoRef.current) return;
-    const snapshot = { nodes: JSON.parse(JSON.stringify(nodes.map(n => ({ ...n, data: Object.fromEntries(Object.entries(n.data).filter(([k]) => !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit'].includes(k))) })))), edges: JSON.parse(JSON.stringify(edges)) };
+    const snapshot = { nodes: JSON.parse(JSON.stringify(nodes.map(n => ({ ...n, data: Object.fromEntries(Object.entries(n.data).filter(([k]) => !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes'].includes(k))) })))), edges: JSON.parse(JSON.stringify(edges)) };
     const history = historyRef.current.slice(0, historyIndexRef.current + 1);
     history.push(snapshot);
     if (history.length > 50) history.shift();
@@ -300,6 +300,67 @@ export default function CanvasWorkspace({ project, onGoHome }) {
     }));
   }, [setNodes]);
 
+  // Generate AI notes from a YouTube transcript
+  const handleGenerateNotes = useCallback(async (nodeId, transcript, title, url) => {
+    if (!transcript || transcript.trim().length < 20) return;
+
+    // Set loading state on the source node
+    setNodes(nds => nds.map(n =>
+      n.id === nodeId ? { ...n, data: { ...n.data, generatingNotes: true } } : n
+    ));
+
+    try {
+      const result = await generateNotes(transcript, title, url);
+      // Create a new text node next to the YouTube node with the notes
+      const sourceNode = nodes.find(n => n.id === nodeId);
+      const offsetX = (sourceNode?.width || 320) + 40;
+      const newId = uuidv4();
+      const notesLabel = title ? `Notes: ${title}` : 'AI Notes';
+
+      setNodes(nds => [
+        ...nds.map(n =>
+          n.id === nodeId ? { ...n, data: { ...n.data, generatingNotes: false } } : n
+        ),
+        {
+          id: newId,
+          type: 'text',
+          position: {
+            x: (sourceNode?.position?.x || 0) + offsetX,
+            y: sourceNode?.position?.y || 0
+          },
+          data: {
+            label: notesLabel,
+            content: result.notes,
+            onChange: handleNodeChange,
+            onDelete: handleNodeDelete,
+            onFileUpload: handleFileUpload,
+            onYouTubeSubmit: handleYouTubeSubmit,
+            onUrlSubmit: handleUrlSubmit,
+            onAiAction: handleAiAction,
+            onToggleLock: handleToggleLock,
+            onGenerateNotes: handleGenerateNotes
+          },
+          dragHandle: '.drag-handle',
+          style: { width: 400, height: 500 }
+        }
+      ]);
+
+      // Connect the YouTube node to the notes node
+      setEdges(eds => [...eds, {
+        id: `e-${nodeId}-${newId}`,
+        source: nodeId,
+        target: newId,
+        animated: true,
+        style: { stroke: '#6366f1' }
+      }]);
+    } catch (err) {
+      setNodes(nds => nds.map(n =>
+        n.id === nodeId ? { ...n, data: { ...n.data, generatingNotes: false } } : n
+      ));
+      alert(`Failed to generate notes: ${err.message}`);
+    }
+  }, [nodes, setNodes, setEdges, handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction, handleToggleLock]);
+
   // Common data passed to all nodes
   const getNodeData = useCallback((type, label) => ({
     label,
@@ -309,8 +370,9 @@ export default function CanvasWorkspace({ project, onGoHome }) {
     onYouTubeSubmit: handleYouTubeSubmit,
     onUrlSubmit: handleUrlSubmit,
     onAiAction: handleAiAction,
-    onToggleLock: handleToggleLock
-  }), [handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction, handleToggleLock]);
+    onToggleLock: handleToggleLock,
+    onGenerateNotes: handleGenerateNotes
+  }), [handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction, handleToggleLock, handleGenerateNotes]);
 
   // Add a new node to the canvas
   const addNode = useCallback((type, extraData = {}) => {
@@ -547,7 +609,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         ...node,
         data: Object.fromEntries(
           Object.entries(node.data).filter(([key]) =>
-            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction'].includes(key)
+            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes'].includes(key)
           )
         )
       }));
@@ -581,7 +643,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         ...node,
         data: Object.fromEntries(
           Object.entries(node.data).filter(([key]) =>
-            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction'].includes(key)
+            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes'].includes(key)
           )
         )
       }));
@@ -738,7 +800,10 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onDelete: handleNodeDelete,
         onFileUpload: handleFileUpload,
         onYouTubeSubmit: handleYouTubeSubmit,
-        onUrlSubmit: handleUrlSubmit
+        onUrlSubmit: handleUrlSubmit,
+        onAiAction: handleAiAction,
+        onToggleLock: handleToggleLock,
+        onGenerateNotes: handleGenerateNotes
       }
     }));
     setNodes(restoredNodes);
@@ -751,7 +816,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
     if (versionData.viewport && reactFlowInstance.current) {
       reactFlowInstance.current.setViewport(versionData.viewport);
     }
-  }, [setNodes, setEdges, handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit]);
+  }, [setNodes, setEdges, handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction, handleToggleLock, handleGenerateNotes]);
 
   // Keyboard shortcuts
   useEffect(() => {

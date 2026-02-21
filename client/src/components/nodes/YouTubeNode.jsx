@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Handle, Position, NodeResizer } from 'reactflow';
-import { Youtube, X, GripVertical, Link, Loader2, PenLine, ExternalLink, ClipboardPaste, ChevronDown, ChevronUp, Lock, Unlock } from 'lucide-react';
+import { Youtube, X, GripVertical, Link, Loader2, PenLine, ExternalLink, ClipboardPaste, ChevronDown, ChevronUp, Lock, Unlock, Sparkles } from 'lucide-react';
 
 export default function YouTubeNode({ id, data }) {
   const [urlInput, setUrlInput] = useState('');
@@ -112,16 +112,27 @@ export default function YouTubeNode({ id, data }) {
             {/* Transcript section */}
             {data.transcript ? (
               <div className="mt-2 flex-1 flex flex-col min-h-0">
-                {/* Toggle to manual edit mode */}
+                {/* Toolbar: Edit + AI Notes */}
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-500 font-medium">Transcript:</span>
-                  <button
-                    onClick={() => setShowManualInput(!showManualInput)}
-                    className="text-xs text-indigo-500 hover:text-indigo-600 flex items-center gap-1"
-                  >
-                    <PenLine size={10} />
-                    {showManualInput ? 'Preview' : 'Edit'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => data.onGenerateNotes?.(id, data.transcript, data.title, data.url)}
+                      disabled={data.generatingNotes}
+                      className="text-xs text-indigo-500 hover:text-indigo-600 flex items-center gap-1 disabled:opacity-50 disabled:cursor-wait"
+                      title="Generate AI notes from transcript"
+                    >
+                      {data.generatingNotes ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                      {data.generatingNotes ? 'Generating...' : 'AI Notes'}
+                    </button>
+                    <button
+                      onClick={() => setShowManualInput(!showManualInput)}
+                      className="text-xs text-indigo-500 hover:text-indigo-600 flex items-center gap-1"
+                    >
+                      <PenLine size={10} />
+                      {showManualInput ? 'Preview' : 'Edit'}
+                    </button>
+                  </div>
                 </div>
                 {showManualInput ? (
                   <textarea
