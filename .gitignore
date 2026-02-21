@@ -1,0 +1,10 @@
+node_modules/
+.env
+uploads/*
+!uploads/.gitkeep
+dist/
+client/dist/
+projects/
+.DS_Store
+*.log
+.netlify/
