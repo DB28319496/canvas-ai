@@ -40,7 +40,9 @@ export default function Toolbar({
   onOpenHistory,
   onAutoLayout,
   onExportPdf,
-  onPresent
+  onPresent,
+  chatOpen,
+  chatSidebarWidth
 }) {
   const { theme, toggleTheme } = useTheme();
   const [showMore, setShowMore] = useState(false);
@@ -78,7 +80,10 @@ export default function Toolbar({
   );
 
   return (
-    <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2 bg-canvas-panel/90 backdrop-blur-md border-b border-canvas-border">
+    <div
+      className="absolute top-0 left-0 z-30 flex items-center justify-between px-4 py-2 bg-canvas-panel/90 backdrop-blur-md border-b border-canvas-border"
+      style={{ right: chatOpen ? `${chatSidebarWidth}px` : '0' }}
+    >
       {/* Left: Logo and project name */}
       <div className="flex items-center gap-3 flex-shrink-0">
         <button

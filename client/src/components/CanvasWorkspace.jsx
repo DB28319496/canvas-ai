@@ -786,6 +786,8 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onOpenHistory={() => setHistoryOpen(true)}
         onAutoLayout={handleAutoLayout}
         onPresent={() => setPresentationOpen(true)}
+        chatOpen={chatOpen}
+        chatSidebarWidth={chatSidebarWidth}
       />
 
       <div data-tour="canvas-area" className="h-full w-full">
