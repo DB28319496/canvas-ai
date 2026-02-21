@@ -800,7 +800,8 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onInit={(instance) => { reactFlowInstance.current = instance; }}
         onDrop={onDrop}
         onDragOver={onDragOver}
-        fitView={project?.nodes?.length > 0}
+        fitView={project?.nodes?.length > 0 && !project?.viewport}
+        fitViewOptions={{ padding: 0.3, maxZoom: 0.85 }}
         defaultViewport={project?.viewport || { x: 0, y: 0, zoom: 1 }}
         minZoom={0.1}
         maxZoom={2}
