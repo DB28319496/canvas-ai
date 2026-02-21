@@ -1,6 +1,14 @@
 const API_BASE = '/api';
 
 async function handleResponse(response) {
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(
+      response.ok
+        ? 'Server returned non-JSON response'
+        : `Request failed (${response.status}). Make sure the API server is running.`
+    );
+  }
   const data = await response.json();
   if (!response.ok) {
     throw new Error(data.error || `Request failed (${response.status})`);

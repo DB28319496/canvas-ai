@@ -77,6 +77,11 @@ router.post('/', async (req, res) => {
       content = content.slice(0, 5000) + '...';
     }
 
+    // Detect JS-rendered pages with little/no static content
+    if (!content) {
+      content = '(This page is dynamically rendered and its content could not be extracted. You can still reference it by URL in the AI chat.)';
+    }
+
     res.json({
       url: parsedUrl.href,
       title: title.slice(0, 200),
