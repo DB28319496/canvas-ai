@@ -190,6 +190,10 @@ html, body, #root {
   border-color: #6366f1 !important;
 }
 
+/* Scrollbar-hide utility (for toolbar overflow) */
+.scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
 /* Streaming cursor for chat */
 .streaming-cursor {
   display: inline-block;

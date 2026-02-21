@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Type, Image, FileText, Youtube, Mic, Globe, LayoutGrid, Code2, StickyNote,
   ZoomIn, ZoomOut, Trash2, Download, Save, Clock, Wand2, AppWindow,
   Sparkles, Palette, HelpCircle,
-  Undo2, Redo2, Search, FileDown, Sun, Moon, Printer, Play
+  Undo2, Redo2, Search, FileDown, Sun, Moon, Printer, Play, MoreHorizontal
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext.jsx';
 
@@ -43,18 +43,51 @@ export default function Toolbar({
   onPresent
 }) {
   const { theme, toggleTheme } = useTheme();
+  const [showMore, setShowMore] = useState(false);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
+  const moreRef = useRef(null);
+
+  // Close "More" menu on outside click
+  useEffect(() => {
+    if (!showMore) return;
+    const handleClick = (e) => {
+      if (moreRef.current && !moreRef.current.contains(e.target)) {
+        setShowMore(false);
+        setShowLayoutMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showMore]);
+
+  const moreItem = (icon, label, onClick, extra) => (
+    <button
+      onClick={() => { onClick?.(); if (!extra?.keepOpen) { setShowMore(false); setShowLayoutMenu(false); } }}
+      className={`flex items-center gap-2.5 w-full px-3 py-2 text-xs transition-colors ${
+        extra?.active
+          ? 'text-accent bg-accent/10 hover:bg-accent/20'
+          : extra?.danger
+            ? 'text-gray-400 hover:text-red-400 hover:bg-canvas-hover'
+            : 'text-gray-400 hover:text-white hover:bg-canvas-hover'
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+      {extra?.badge && <span className="w-1.5 h-1.5 rounded-full bg-accent ml-auto" />}
+    </button>
+  );
+
   return (
     <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2 bg-canvas-panel/90 backdrop-blur-md border-b border-canvas-border">
       {/* Left: Logo and project name */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-shrink-0">
         <button
           onClick={onGoHome}
           className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-canvas-hover transition-colors"
           title="Back to Dashboard"
         >
           <Sparkles size={20} className="text-accent" />
-          <span className="text-sm font-semibold text-white hidden lg:inline">Canvas AI</span>
+          <span className="text-sm font-semibold text-white hidden xl:inline">Canvas AI</span>
         </button>
 
         <div className="w-px h-6 bg-canvas-border" />
@@ -62,28 +95,28 @@ export default function Toolbar({
         <input
           value={projectName}
           onChange={(e) => onProjectNameChange(e.target.value)}
-          className="text-sm text-gray-300 bg-transparent border-none outline-none hover:text-white focus:text-white transition-colors w-[140px]"
+          className="text-sm text-gray-300 bg-transparent border-none outline-none hover:text-white focus:text-white transition-colors w-[120px]"
           placeholder="Untitled Project"
         />
       </div>
 
       {/* Center: Node type buttons */}
-      <div data-tour="toolbar-nodes" className="flex items-center gap-1 px-2 py-1 bg-canvas-bg/60 rounded-xl border border-canvas-border">
+      <div data-tour="toolbar-nodes" className="flex items-center gap-1 px-2 py-1 bg-canvas-bg/60 rounded-xl border border-canvas-border min-w-0 overflow-x-auto scrollbar-hide">
         {nodeButtons.map(({ type, icon: Icon, label, color }) => (
           <button
             key={type}
             onClick={() => onAddNode(type)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-all text-xs"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-all text-xs flex-shrink-0"
             title={`Add ${label} Node`}
           >
             <Icon size={14} className={color} />
-            <span className="hidden lg:inline">{label}</span>
+            <span className="hidden xl:inline">{label}</span>
           </button>
         ))}
       </div>
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-0.5">
+      {/* Right: Primary actions + More menu */}
+      <div className="flex items-center gap-0.5 flex-shrink-0">
         {/* Undo/Redo */}
         <button
           onClick={onUndo}
@@ -109,35 +142,6 @@ export default function Toolbar({
           <Search size={14} />
         </button>
 
-        {/* Auto Layout */}
-        <div className="relative">
-          <button
-            onClick={() => setShowLayoutMenu(!showLayoutMenu)}
-            className="p-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-colors"
-            title="Auto Layout"
-          >
-            <Wand2 size={14} />
-          </button>
-          {showLayoutMenu && (
-            <div className="absolute right-0 top-full mt-1 bg-canvas-panel border border-canvas-border rounded-lg shadow-xl overflow-hidden z-50 min-w-[140px]">
-              {[
-                { id: 'grid', label: 'Grid', desc: 'Even grid' },
-                { id: 'tree', label: 'Tree', desc: 'Hierarchy' },
-                { id: 'radial', label: 'Mind Map', desc: 'Radial' }
-              ].map(layout => (
-                <button
-                  key={layout.id}
-                  onClick={() => { onAutoLayout?.(layout.id); setShowLayoutMenu(false); }}
-                  className="flex items-center justify-between gap-4 w-full px-3 py-2 text-xs text-gray-400 hover:text-white hover:bg-canvas-hover transition-colors"
-                >
-                  <span className="font-medium">{layout.label}</span>
-                  <span className="text-[10px] text-gray-600">{layout.desc}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
         <div className="w-px h-5 bg-canvas-border mx-0.5" />
 
         {/* Zoom */}
@@ -158,25 +162,6 @@ export default function Toolbar({
 
         <div className="w-px h-5 bg-canvas-border mx-0.5" />
 
-        {/* Voice & Tone */}
-        <button
-          onClick={onOpenVoiceTone}
-          className={`flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors text-xs ${
-            voiceToneActive
-              ? 'text-accent bg-accent/10 hover:bg-accent/20'
-              : 'text-gray-400 hover:text-white hover:bg-canvas-hover'
-          }`}
-          title="Voice & Tone Settings"
-        >
-          <Palette size={13} />
-          <span className="hidden xl:inline">Voice</span>
-          {voiceToneActive && (
-            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-          )}
-        </button>
-
-        <div className="w-px h-5 bg-canvas-border mx-0.5" />
-
         {/* Save */}
         <button
           onClick={onSaveProject}
@@ -188,79 +173,94 @@ export default function Toolbar({
           <span className="hidden xl:inline">Save</span>
         </button>
 
-        {/* Version History */}
-        <button
-          onClick={onOpenHistory}
-          className="p-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-colors"
-          title="Version History"
-        >
-          <Clock size={14} />
-        </button>
-
-        {/* Present */}
-        <button
-          onClick={onPresent}
-          className="p-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-colors"
-          title="Presentation Mode"
-        >
-          <Play size={14} />
-        </button>
-
-        {/* Export Document */}
-        <button
-          onClick={onExportDocument}
-          className="p-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-colors"
-          title="Export as Document (Cmd+E)"
-        >
-          <FileDown size={14} />
-        </button>
-
-        {/* Export PDF */}
-        <button
-          onClick={onExportPdf}
-          className="p-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-colors"
-          title="Export as PDF"
-        >
-          <Printer size={14} />
-        </button>
-
-        {/* Export Chat */}
-        <button
-          onClick={onExportChat}
-          className="p-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-colors"
-          title="Export Chat"
-        >
-          <Download size={14} />
-        </button>
-
-        {/* Clear */}
-        <button
-          onClick={onClearCanvas}
-          className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-canvas-hover rounded-lg transition-colors"
-          title="Clear Canvas"
-        >
-          <Trash2 size={14} />
-        </button>
-
         <div className="w-px h-5 bg-canvas-border mx-0.5" />
 
-        {/* Theme toggle */}
-        <button
-          onClick={toggleTheme}
-          className="p-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-colors"
-          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-        >
-          {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-        </button>
+        {/* More menu */}
+        <div className="relative" ref={moreRef}>
+          <button
+            onClick={() => { setShowMore(!showMore); setShowLayoutMenu(false); }}
+            className={`p-1.5 rounded-lg transition-colors ${
+              showMore ? 'text-white bg-canvas-hover' : 'text-gray-400 hover:text-white hover:bg-canvas-hover'
+            }`}
+            title="More actions"
+          >
+            <MoreHorizontal size={14} />
+          </button>
 
-        {/* Help */}
-        <button
-          onClick={onReplayTour}
-          className="p-1.5 text-gray-400 hover:text-accent hover:bg-canvas-hover rounded-lg transition-colors"
-          title="Replay Tour"
-        >
-          <HelpCircle size={14} />
-        </button>
+          {showMore && (
+            <div className="absolute right-0 top-full mt-1 bg-canvas-panel border border-canvas-border rounded-lg shadow-xl overflow-hidden z-50 min-w-[180px]">
+              {/* Auto Layout with sub-menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowLayoutMenu(!showLayoutMenu)}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-xs text-gray-400 hover:text-white hover:bg-canvas-hover transition-colors"
+                >
+                  <Wand2 size={13} />
+                  <span>Auto Layout</span>
+                  <span className="ml-auto text-[10px] text-gray-600">&rsaquo;</span>
+                </button>
+                {showLayoutMenu && (
+                  <div className="absolute right-full top-0 mr-1 bg-canvas-panel border border-canvas-border rounded-lg shadow-xl overflow-hidden z-50 min-w-[130px]">
+                    {[
+                      { id: 'grid', label: 'Grid', desc: 'Even grid' },
+                      { id: 'tree', label: 'Tree', desc: 'Hierarchy' },
+                      { id: 'radial', label: 'Mind Map', desc: 'Radial' }
+                    ].map(layout => (
+                      <button
+                        key={layout.id}
+                        onClick={() => { onAutoLayout?.(layout.id); setShowMore(false); setShowLayoutMenu(false); }}
+                        className="flex items-center justify-between gap-3 w-full px-3 py-2 text-xs text-gray-400 hover:text-white hover:bg-canvas-hover transition-colors"
+                      >
+                        <span className="font-medium">{layout.label}</span>
+                        <span className="text-[10px] text-gray-600">{layout.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="h-px bg-canvas-border" />
+
+              {/* Voice & Tone */}
+              {moreItem(
+                <Palette size={13} />,
+                voiceToneActive ? 'Voice & Tone (Active)' : 'Voice & Tone',
+                onOpenVoiceTone,
+                { active: voiceToneActive, badge: voiceToneActive }
+              )}
+
+              {/* Version History */}
+              {moreItem(<Clock size={13} />, 'Version History', onOpenHistory)}
+
+              {/* Present */}
+              {moreItem(<Play size={13} />, 'Presentation Mode', onPresent)}
+
+              <div className="h-px bg-canvas-border" />
+
+              {/* Exports */}
+              {moreItem(<FileDown size={13} />, 'Export Document', onExportDocument)}
+              {moreItem(<Printer size={13} />, 'Export PDF', onExportPdf)}
+              {moreItem(<Download size={13} />, 'Export Chat', onExportChat)}
+
+              <div className="h-px bg-canvas-border" />
+
+              {/* Theme */}
+              {moreItem(
+                theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />,
+                theme === 'dark' ? 'Light Mode' : 'Dark Mode',
+                toggleTheme
+              )}
+
+              {/* Help */}
+              {moreItem(<HelpCircle size={13} />, 'Replay Tour', onReplayTour)}
+
+              <div className="h-px bg-canvas-border" />
+
+              {/* Clear Canvas */}
+              {moreItem(<Trash2 size={13} />, 'Clear Canvas', onClearCanvas, { danger: true })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
