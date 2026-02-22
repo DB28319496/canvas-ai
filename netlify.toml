@@ -11,7 +11,21 @@
 [functions."api"]
   timeout = 26
 
-# Redirect all /api/* requests to the serverless function
+[functions."chat"]
+  timeout = 26
+
+# Route chat requests to the lightweight chat function (MUST come before /api/*)
+[[redirects]]
+  from = "/api/chat/stream"
+  to = "/.netlify/functions/chat"
+  status = 200
+
+[[redirects]]
+  from = "/api/chat"
+  to = "/.netlify/functions/chat"
+  status = 200
+
+# All other API requests go to the Express-based function
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/api/:splat"

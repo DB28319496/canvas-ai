@@ -174,78 +174,12 @@ export async function scrapeUrl(url) {
   return handleResponse(response);
 }
 
-// Stream a chat message via SSE — calls onChunk for each token, onDone when complete.
-// Falls back to non-streaming endpoint if SSE fails (e.g. on serverless platforms).
+// Send a chat message — tries streaming SSE first (for local dev), falls back to non-streaming.
 export async function streamChatMessage(messages, canvasContext, voiceToneSettings, model = 'sonnet', edgeContext = [], searchContext = null, { onChunk, onDone, onError }) {
   const auth = await getAuthHeaders();
   const payload = { messages, canvasContext, voiceToneSettings, model, edgeContext, searchContext };
-  let doneReceived = false;
 
-  try {
-    const response = await fetch(`${API_BASE}/chat/stream`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...auth },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Stream request failed (${response.status})`);
-    }
-
-    // Try to read as SSE stream
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        try {
-          const event = JSON.parse(line.slice(6));
-          if (event.type === 'text') {
-            onChunk?.(event.text);
-          } else if (event.type === 'done') {
-            doneReceived = true;
-            onDone?.(event.message, event.createNode);
-          } else if (event.type === 'error') {
-            onError?.(event.error);
-            return;
-          }
-        } catch {
-          // skip malformed JSON
-        }
-      }
-    }
-
-    // Process any remaining buffer
-    if (!doneReceived && buffer.trim()) {
-      const remaining = buffer.split('\n');
-      for (const line of remaining) {
-        if (!line.startsWith('data: ')) continue;
-        try {
-          const event = JSON.parse(line.slice(6));
-          if (event.type === 'done') {
-            doneReceived = true;
-            onDone?.(event.message, event.createNode);
-          }
-        } catch {}
-      }
-    }
-
-    if (doneReceived) return;
-    // Stream completed without a 'done' event — fall through to fallback
-  } catch {
-    // Stream failed — fall through to fallback
-  }
-
-  // Fallback: use non-streaming chat endpoint
+  // Try non-streaming first (works reliably on serverless platforms)
   try {
     const response = await fetch(`${API_BASE}/chat`, {
       method: 'POST',
@@ -255,7 +189,44 @@ export async function streamChatMessage(messages, canvasContext, voiceToneSettin
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
     onDone?.(data.message, data.createNode);
+    return;
   } catch (err) {
-    onError?.(err.message);
+    // If non-streaming fails, try streaming as fallback (for local dev server)
   }
+
+  // Fallback: try streaming SSE endpoint
+  try {
+    const response = await fetch(`${API_BASE}/chat/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...auth },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error(`Request failed (${response.status})`);
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let doneReceived = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const event = JSON.parse(line.slice(6));
+          if (event.type === 'text') onChunk?.(event.text);
+          else if (event.type === 'done') { doneReceived = true; onDone?.(event.message, event.createNode); }
+          else if (event.type === 'error') { onError?.(event.error); return; }
+        } catch {}
+      }
+    }
+    if (doneReceived) return;
+  } catch {}
+
+  onError?.('Failed to get AI response. Please try again.');
 }
