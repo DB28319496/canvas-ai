@@ -79,7 +79,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
 
   const pushHistory = useCallback(() => {
     if (isUndoRedoRef.current) return;
-    const snapshot = { nodes: JSON.parse(JSON.stringify(nodes.map(n => ({ ...n, data: Object.fromEntries(Object.entries(n.data).filter(([k]) => !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes'].includes(k))) })))), edges: JSON.parse(JSON.stringify(edges)) };
+    const snapshot = { nodes: JSON.parse(JSON.stringify(nodes.map(n => ({ ...n, data: Object.fromEntries(Object.entries(n.data).filter(([k]) => !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes', 'generatingNotes'].includes(k))) })))), edges: JSON.parse(JSON.stringify(edges)) };
     const history = historyRef.current.slice(0, historyIndexRef.current + 1);
     history.push(snapshot);
     if (history.length > 50) history.shift();
@@ -442,10 +442,11 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onYouTubeSubmit: handleYouTubeSubmit,
         onUrlSubmit: handleUrlSubmit,
         onAiAction: handleAiAction,
-        onToggleLock: handleToggleLock
+        onToggleLock: handleToggleLock,
+        onGenerateNotes: handleGenerateNotes
       }
     })));
-  }, [handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction, handleToggleLock, setNodes]);
+  }, [handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction, handleToggleLock, handleGenerateNotes, setNodes]);
 
   // Handle node drop into/out of groups
   const onNodeDragStop = useCallback((event, draggedNode) => {
@@ -609,7 +610,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         ...node,
         data: Object.fromEntries(
           Object.entries(node.data).filter(([key]) =>
-            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes'].includes(key)
+            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes', 'generatingNotes'].includes(key)
           )
         )
       }));
@@ -643,7 +644,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         ...node,
         data: Object.fromEntries(
           Object.entries(node.data).filter(([key]) =>
-            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes'].includes(key)
+            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes', 'generatingNotes'].includes(key)
           )
         )
       }));
