@@ -153,8 +153,13 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
         }
       }
 
+      // Filter out empty assistant messages from history (from previous failed requests)
+      const cleanMessages = newMessages
+        .filter(m => m.role === 'user' || (m.content && m.content.trim()))
+        .map(m => ({ role: m.role, content: m.content }));
+
       await streamChatMessage(
-        newMessages.map(m => ({ role: m.role, content: m.content })),
+        cleanMessages,
         nodeContext,
         voiceToneSettings,
         selectedModel,
@@ -173,18 +178,26 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
             });
           },
           onDone: (finalMessage, createNode) => {
-            setMessages(prev => {
-              const updated = [...prev];
-              updated[updated.length - 1] = { role: 'assistant', content: finalMessage };
-              return updated;
-            });
+            if (!finalMessage || !finalMessage.trim()) {
+              // Empty response — remove the placeholder bubble
+              setMessages(prev => prev.slice(0, -1));
+              setError('AI returned an empty response. Please try again.');
+            } else {
+              setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { role: 'assistant', content: finalMessage };
+                return updated;
+              });
+            }
             setIsStreaming(false);
             setIsLoading(false);
-            if (createNode && onCreateNode) {
+            if (finalMessage && createNode && onCreateNode) {
               onCreateNode(createNode);
             }
           },
           onError: (errorMsg) => {
+            // Remove the empty assistant placeholder bubble
+            setMessages(prev => prev.slice(0, -1));
             setError(errorMsg);
             setIsStreaming(false);
             setIsLoading(false);
@@ -192,6 +205,8 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
         }
       );
     } catch (err) {
+      // Remove the empty assistant placeholder bubble
+      setMessages(prev => prev.slice(0, -1));
       setError(err.message);
       setIsStreaming(false);
       setIsLoading(false);

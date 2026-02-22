@@ -488,45 +488,58 @@ export default function CanvasWorkspace({ project, onGoHome }) {
     const groupNodes = nodes.filter(n => n.type === 'group' && n.id !== draggedNode.id);
     let newParentId = null;
 
+    // For nodes already in a group, position is relative to parent — convert to absolute
+    const currentParent = draggedNode.parentNode || null;
+    let absX = draggedNode.position.x;
+    let absY = draggedNode.position.y;
+    if (currentParent) {
+      const parent = nodes.find(n => n.id === currentParent);
+      if (parent) {
+        absX += parent.position.x;
+        absY += parent.position.y;
+      }
+    }
+
+    // Check if the node's center overlaps with any group
+    const nw = draggedNode.width || draggedNode.style?.width || 320;
+    const nh = draggedNode.height || draggedNode.style?.height || 280;
+    const centerX = absX + nw / 2;
+    const centerY = absY + nh / 2;
+
     for (const group of groupNodes) {
       const gx = group.position.x;
       const gy = group.position.y;
       const gw = group.style?.width || 500;
       const gh = group.style?.height || 400;
-      const nx = draggedNode.position.x;
-      const ny = draggedNode.position.y;
 
-      if (nx > gx && nx < gx + gw - 100 && ny > gy && ny < gy + gh - 50) {
+      if (centerX > gx && centerX < gx + gw && centerY > gy && centerY < gy + gh) {
         newParentId = group.id;
         break;
       }
     }
 
-    const currentParent = draggedNode.parentNode || null;
     if (newParentId === currentParent) return;
 
     setNodes(nds => nds.map(n => {
       if (n.id !== draggedNode.id) return n;
       if (newParentId) {
-        const parent = nds.find(p => p.id === newParentId);
+        // Moving into a group — convert absolute position to relative
+        const newGroup = nds.find(p => p.id === newParentId);
         return {
           ...n,
           parentNode: newParentId,
           extent: 'parent',
           position: {
-            x: n.position.x - (parent?.position.x || 0),
-            y: n.position.y - (parent?.position.y || 0)
+            x: absX - (newGroup?.position.x || 0),
+            y: absY - (newGroup?.position.y || 0)
           }
         };
       } else {
-        const parent = nds.find(p => p.id === currentParent);
+        // Moving out of a group — convert relative position to absolute
         const { parentNode, extent, ...rest } = n;
         return {
           ...rest,
-          position: {
-            x: n.position.x + (parent?.position.x || 0),
-            y: n.position.y + (parent?.position.y || 0)
-          }
+          position: { x: absX, y: absY }
         };
       }
     }));

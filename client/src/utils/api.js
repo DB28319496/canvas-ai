@@ -180,6 +180,7 @@ export async function streamChatMessage(messages, canvasContext, voiceToneSettin
   const payload = { messages, canvasContext, voiceToneSettings, model, edgeContext, searchContext, groupContext, focusedGroupIds };
 
   // Try non-streaming first (works reliably on serverless platforms)
+  let nonStreamError = null;
   try {
     const response = await fetch(`${API_BASE}/chat`, {
       method: 'POST',
@@ -191,6 +192,7 @@ export async function streamChatMessage(messages, canvasContext, voiceToneSettin
     onDone?.(data.message, data.createNode);
     return;
   } catch (err) {
+    nonStreamError = err;
     // If non-streaming fails, try streaming as fallback (for local dev server)
   }
 
@@ -228,5 +230,5 @@ export async function streamChatMessage(messages, canvasContext, voiceToneSettin
     if (doneReceived) return;
   } catch {}
 
-  onError?.('Failed to get AI response. Please try again.');
+  onError?.(nonStreamError?.message || 'Failed to get AI response. Please try again.');
 }
