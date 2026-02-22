@@ -277,10 +277,12 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
         </button>
       )}
 
-      {/* Sidebar — full-screen overlay on mobile, side panel on desktop */}
+      {/* Sidebar — full-screen overlay on mobile (z-50 above toolbar), side panel on desktop */}
       <div
         data-tour="chat-sidebar"
-        className={`fixed right-0 top-0 h-full z-20 bg-canvas-panel border-l border-canvas-border flex flex-col ${
+        className={`fixed right-0 top-0 h-full bg-canvas-panel border-l border-canvas-border flex flex-col ${
+          isMobile ? 'z-50' : 'z-20'
+        } ${
           isOpen ? '' : 'w-0 overflow-hidden transition-all duration-300'
         }`}
         style={isOpen ? { width: isMobile ? '100%' : sidebarWidth } : undefined}
@@ -296,11 +298,11 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
           </div>
         )}
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-canvas-border flex-shrink-0">
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-canvas-border flex-shrink-0">
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-accent" />
             <span className="text-sm font-semibold text-white">AI Chat</span>
-            <span className="text-xs text-gray-500 bg-canvas-bg px-2 py-0.5 rounded-full">
+            <span className="text-xs text-gray-500 bg-canvas-bg px-2 py-0.5 rounded-full hidden sm:inline">
               {nodes.length} nodes
             </span>
           </div>
@@ -343,7 +345,7 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
 
         {/* Group filter chips */}
         {availableGroups.length > 0 && (
-          <div className="px-4 py-2 border-b border-canvas-border flex-shrink-0">
+          <div className="px-3 sm:px-4 py-1.5 sm:py-2 border-b border-canvas-border flex-shrink-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <Layers size={12} className="text-gray-500 flex-shrink-0" />
               <button
@@ -451,7 +453,7 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
         )}
 
         {/* Input */}
-        <div className="p-4 border-t border-canvas-border flex-shrink-0">
+        <div className="p-3 sm:p-4 border-t border-canvas-border flex-shrink-0">
           <div className="flex items-end gap-2">
             <button
               onClick={() => setWebSearchEnabled(!webSearchEnabled)}
