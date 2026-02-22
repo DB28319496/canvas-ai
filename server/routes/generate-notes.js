@@ -61,15 +61,16 @@ router.post('/', async (req, res) => {
       return res.status(500).json({ error: 'Anthropic API key not configured.' });
     }
 
-    const truncatedTranscript = transcript.length > 50000 ? transcript.slice(0, 50000) + '\n\n[Transcript truncated...]' : transcript;
+    // Truncate to ~15k chars to keep within fast response times on serverless
+    const truncatedTranscript = transcript.length > 15000 ? transcript.slice(0, 15000) + '\n\n[Transcript truncated...]' : transcript;
 
     const userMessage = title
       ? `Here is the transcript from "${title}"${url ? ` (${url})` : ''}:\n\n${truncatedTranscript}\n\nPlease generate comprehensive structured notes from this transcript.`
       : `Here is a transcript:\n\n${truncatedTranscript}\n\nPlease generate comprehensive structured notes from this transcript.`;
 
     const response = await getClient().messages.create({
-      model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 4096,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 3000,
       system: NOTES_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userMessage }]
     });
