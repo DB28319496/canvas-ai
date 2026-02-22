@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { nodeTypes } from './nodes/index.js';
 import Toolbar from './toolbar/Toolbar.jsx';
 import ChatSidebar from './chat/ChatSidebar.jsx';
-import { uploadFile, fetchYouTubeData, scrapeUrl, saveProject, generateNotes } from '../utils/api.js';
+import { uploadFile, fetchYouTubeData, scrapeUrl, saveProject, streamChatMessage } from '../utils/api.js';
 import OnboardingTour, { shouldShowOnboarding, resetOnboarding } from './onboarding/OnboardingTour.jsx';
 import VoiceTonePanel from './voicetone/VoiceTonePanel.jsx';
 import SearchPanel from './search/SearchPanel.jsx';
@@ -300,7 +300,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
     }));
   }, [setNodes]);
 
-  // Generate AI notes from a YouTube transcript
+  // Generate AI notes from a YouTube transcript using the chat endpoint (streaming w/ fallback)
   const handleGenerateNotes = useCallback(async (nodeId, transcript, title, url) => {
     if (!transcript || transcript.trim().length < 20) return;
 
@@ -309,50 +309,81 @@ export default function CanvasWorkspace({ project, onGoHome }) {
       n.id === nodeId ? { ...n, data: { ...n.data, generatingNotes: true } } : n
     ));
 
+    // Trim transcript to keep request fast on serverless
+    const trimmed = transcript.length > 12000 ? transcript.slice(0, 12000) + '\n\n[Transcript truncated...]' : transcript;
+
+    const notesPrompt = `Generate structured notes from this ${title ? `"${title}" ` : ''}transcript. Format as HTML with: <h2> Overview (2-3 sentences), <h2> Key Takeaways (bulleted), <h2> Detailed Notes (organized by topic with <h3> sub-headings), <h2> Action Items. Use <ul><li> for bullets, <strong> for key terms. Be thorough but concise.\n\nTranscript:\n${trimmed}`;
+
+    // Build minimal canvas context with just this transcript node
+    const nodeContext = [{
+      id: nodeId,
+      type: 'youtube',
+      label: title || 'YouTube Video',
+      url: url || '',
+      title: title || '',
+      transcript: trimmed
+    }];
+
     try {
-      const result = await generateNotes(transcript, title, url);
-      // Create a new text node next to the YouTube node with the notes
-      const sourceNode = nodes.find(n => n.id === nodeId);
-      const offsetX = (sourceNode?.width || 320) + 40;
-      const newId = uuidv4();
-      const notesLabel = title ? `Notes: ${title}` : 'AI Notes';
-
-      setNodes(nds => [
-        ...nds.map(n =>
-          n.id === nodeId ? { ...n, data: { ...n.data, generatingNotes: false } } : n
-        ),
+      await streamChatMessage(
+        [{ role: 'user', content: notesPrompt }],
+        nodeContext,
+        null, // no voice tone
+        'haiku', // fast model
+        [],
+        null,
         {
-          id: newId,
-          type: 'text',
-          position: {
-            x: (sourceNode?.position?.x || 0) + offsetX,
-            y: sourceNode?.position?.y || 0
-          },
-          data: {
-            label: notesLabel,
-            content: result.notes,
-            onChange: handleNodeChange,
-            onDelete: handleNodeDelete,
-            onFileUpload: handleFileUpload,
-            onYouTubeSubmit: handleYouTubeSubmit,
-            onUrlSubmit: handleUrlSubmit,
-            onAiAction: handleAiAction,
-            onToggleLock: handleToggleLock,
-            onGenerateNotes: handleGenerateNotes
-          },
-          dragHandle: '.drag-handle',
-          style: { width: 400, height: 500 }
-        }
-      ]);
+          onChunk: () => {}, // don't need incremental updates
+          onDone: (finalMessage) => {
+            const sourceNode = nodes.find(n => n.id === nodeId);
+            const offsetX = (sourceNode?.width || 320) + 40;
+            const newId = uuidv4();
+            const notesLabel = title ? `Notes: ${title}` : 'AI Notes';
 
-      // Connect the YouTube node to the notes node
-      setEdges(eds => [...eds, {
-        id: `e-${nodeId}-${newId}`,
-        source: nodeId,
-        target: newId,
-        animated: true,
-        style: { stroke: '#6366f1' }
-      }]);
+            setNodes(nds => [
+              ...nds.map(n =>
+                n.id === nodeId ? { ...n, data: { ...n.data, generatingNotes: false } } : n
+              ),
+              {
+                id: newId,
+                type: 'text',
+                position: {
+                  x: (sourceNode?.position?.x || 0) + offsetX,
+                  y: sourceNode?.position?.y || 0
+                },
+                data: {
+                  label: notesLabel,
+                  content: finalMessage,
+                  onChange: handleNodeChange,
+                  onDelete: handleNodeDelete,
+                  onFileUpload: handleFileUpload,
+                  onYouTubeSubmit: handleYouTubeSubmit,
+                  onUrlSubmit: handleUrlSubmit,
+                  onAiAction: handleAiAction,
+                  onToggleLock: handleToggleLock,
+                  onGenerateNotes: handleGenerateNotes
+                },
+                dragHandle: '.drag-handle',
+                style: { width: 400, height: 500 }
+              }
+            ]);
+
+            setEdges(eds => [...eds, {
+              id: `e-${nodeId}-${newId}`,
+              source: nodeId,
+              target: newId,
+              animated: true,
+              style: { stroke: '#6366f1' }
+            }]);
+          },
+          onError: (errorMsg) => {
+            setNodes(nds => nds.map(n =>
+              n.id === nodeId ? { ...n, data: { ...n.data, generatingNotes: false } } : n
+            ));
+            alert(`Failed to generate notes: ${errorMsg}`);
+          }
+        }
+      );
     } catch (err) {
       setNodes(nds => nds.map(n =>
         n.id === nodeId ? { ...n, data: { ...n.data, generatingNotes: false } } : n
