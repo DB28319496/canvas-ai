@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Send, Loader2, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Cpu, Square, Globe, Layers, X } from 'lucide-react';
+import { Send, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Cpu, Square, Globe, Layers, X } from 'lucide-react';
 import { streamChatMessage, webSearch } from '../../utils/api.js';
 import MarkdownMessage from './MarkdownMessage.jsx';
 import PromptTemplates from './PromptTemplates.jsx';
@@ -412,10 +412,14 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
                     {msg.content ? (
                       <MarkdownMessage content={msg.content} />
                     ) : isStreaming && i === messages.length - 1 ? (
-                      <span className="streaming-cursor" />
+                      <div className="typing-indicator">
+                        <span className="dot" />
+                        <span className="dot" />
+                        <span className="dot" />
+                      </div>
                     ) : null}
                     {isStreaming && i === messages.length - 1 && msg.content && (
-                      <span className="streaming-cursor inline" />
+                      <span className="streaming-cursor" />
                     )}
                   </>
                 ) : (
@@ -427,10 +431,11 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
 
           {isLoading && !isStreaming && (
             <div className="flex justify-start">
-              <div className="bg-canvas-bg text-gray-400 rounded-2xl rounded-bl-md px-4 py-3 border border-canvas-border">
-                <div className="flex items-center gap-2">
-                  <Loader2 size={14} className="animate-spin" />
-                  <span className="text-xs">Connecting...</span>
+              <div className="bg-canvas-bg rounded-2xl rounded-bl-md px-4 py-3 border border-canvas-border">
+                <div className="typing-indicator">
+                  <span className="dot" />
+                  <span className="dot" />
+                  <span className="dot" />
                 </div>
               </div>
             </div>
