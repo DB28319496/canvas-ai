@@ -50,6 +50,8 @@ export default function CanvasWorkspace({ project, onGoHome }) {
   const [aiQuickAction, setAiQuickAction] = useState(null); // { nodeId, content, label, position }
   const [presentationOpen, setPresentationOpen] = useState(false);
   const [saveToast, setSaveToast] = useState(null); // 'saved' | 'error' | null
+  const [groupToast, setGroupToast] = useState(null); // { text, type: 'added' | 'removed' } | null
+  const [hoveredGroupId, setHoveredGroupId] = useState(null);
   const [voiceToneSettings, setVoiceToneSettings] = useState(
     project?.voiceToneSettings || { preset: [], customDescription: '', writingSamples: '' }
   );
@@ -79,7 +81,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
 
   const pushHistory = useCallback(() => {
     if (isUndoRedoRef.current) return;
-    const snapshot = { nodes: JSON.parse(JSON.stringify(nodes.map(n => ({ ...n, data: Object.fromEntries(Object.entries(n.data).filter(([k]) => !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes', 'generatingNotes'].includes(k))) })))), edges: JSON.parse(JSON.stringify(edges)) };
+    const snapshot = { nodes: JSON.parse(JSON.stringify(nodes.map(n => ({ ...n, data: Object.fromEntries(Object.entries(n.data).filter(([k]) => !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes', 'generatingNotes', 'isDropTarget'].includes(k))) })))), edges: JSON.parse(JSON.stringify(edges)) };
     const history = historyRef.current.slice(0, historyIndexRef.current + 1);
     history.push(snapshot);
     if (history.length > 50) history.shift();
@@ -476,10 +478,42 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onUrlSubmit: handleUrlSubmit,
         onAiAction: handleAiAction,
         onToggleLock: handleToggleLock,
-        onGenerateNotes: handleGenerateNotes
+        onGenerateNotes: handleGenerateNotes,
+        ...(node.type === 'group' ? { isDropTarget: hoveredGroupId === node.id } : {})
       }
     })));
-  }, [handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction, handleToggleLock, handleGenerateNotes, setNodes]);
+  }, [handleNodeChange, handleNodeDelete, handleFileUpload, handleYouTubeSubmit, handleUrlSubmit, handleAiAction, handleToggleLock, handleGenerateNotes, hoveredGroupId, setNodes]);
+
+  // Highlight group frame while dragging a node over it
+  const onNodeDrag = useCallback((event, draggedNode) => {
+    if (draggedNode.type === 'group') return;
+
+    const groupNodes = nodes.filter(n => n.type === 'group' && n.id !== draggedNode.id);
+    const currentParentDrag = draggedNode.parentNode || null;
+    let absXD = draggedNode.position.x;
+    let absYD = draggedNode.position.y;
+    if (currentParentDrag) {
+      const parentD = nodes.find(n => n.id === currentParentDrag);
+      if (parentD) { absXD += parentD.position.x; absYD += parentD.position.y; }
+    }
+    const nwD = draggedNode.width || draggedNode.style?.width || 320;
+    const nhD = draggedNode.height || draggedNode.style?.height || 280;
+    const cxD = absXD + nwD / 2;
+    const cyD = absYD + nhD / 2;
+
+    let hovered = null;
+    for (const group of groupNodes) {
+      const gx = group.position.x;
+      const gy = group.position.y;
+      const gw = group.style?.width || 500;
+      const gh = group.style?.height || 400;
+      if (cxD > gx && cxD < gx + gw && cyD > gy && cyD < gy + gh) {
+        hovered = group.id;
+        break;
+      }
+    }
+    setHoveredGroupId(prev => prev !== hovered ? hovered : prev);
+  }, [nodes]);
 
   // Handle node drop into/out of groups
   const onNodeDragStop = useCallback((event, draggedNode) => {
@@ -518,7 +552,21 @@ export default function CanvasWorkspace({ project, onGoHome }) {
       }
     }
 
+    setHoveredGroupId(null);
     if (newParentId === currentParent) return;
+
+    // Show toast feedback
+    const groupLabel = newParentId
+      ? nodes.find(n => n.id === newParentId)?.data?.label || 'Group'
+      : null;
+    const nodeLabel = draggedNode.data?.label || 'Node';
+    if (newParentId) {
+      setGroupToast({ text: `"${nodeLabel}" added to "${groupLabel}"`, type: 'added' });
+    } else {
+      const oldGroupLabel = nodes.find(n => n.id === currentParent)?.data?.label || 'Group';
+      setGroupToast({ text: `"${nodeLabel}" removed from "${oldGroupLabel}"`, type: 'removed' });
+    }
+    setTimeout(() => setGroupToast(null), 2500);
 
     setNodes(nds => nds.map(n => {
       if (n.id !== draggedNode.id) return n;
@@ -656,7 +704,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         ...node,
         data: Object.fromEntries(
           Object.entries(node.data).filter(([key]) =>
-            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes', 'generatingNotes'].includes(key)
+            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes', 'generatingNotes', 'isDropTarget'].includes(key)
           )
         )
       }));
@@ -690,7 +738,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         ...node,
         data: Object.fromEntries(
           Object.entries(node.data).filter(([key]) =>
-            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes', 'generatingNotes'].includes(key)
+            !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes', 'generatingNotes', 'isDropTarget'].includes(key)
           )
         )
       }));
@@ -956,6 +1004,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         onInit={(instance) => {
@@ -1049,6 +1098,16 @@ export default function CanvasWorkspace({ project, onGoHome }) {
             : 'bg-red-500/15 text-red-400 border border-red-500/20'
         }`}>
           {saveToast === 'saved' ? 'Project saved' : 'Save failed — try again'}
+        </div>
+      )}
+      {/* Group assignment toast */}
+      {groupToast && (
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg transition-all duration-300 ${
+          groupToast.type === 'added'
+            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
+            : 'bg-gray-500/15 text-gray-400 border border-gray-500/20'
+        }`}>
+          {groupToast.text}
         </div>
       )}
 

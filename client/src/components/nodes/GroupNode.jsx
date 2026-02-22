@@ -11,7 +11,11 @@ export default function GroupNode({ id, data, selected }) {
   }, [id, data]);
 
   return (
-    <div className="rounded-2xl border-2 border-dashed border-amber-400/40 bg-amber-400/5 w-full h-full">
+    <div className={`rounded-2xl border-2 border-dashed w-full h-full transition-all duration-200 ${
+      data.isDropTarget
+        ? 'border-amber-400 bg-amber-400/15 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
+        : 'border-amber-400/40 bg-amber-400/5'
+    }`}>
       <NodeResizer minWidth={300} minHeight={250} isVisible={selected} lineStyle={{ borderColor: '#f59e0b' }} handleStyle={{ backgroundColor: '#f59e0b', border: '1.5px solid #fff' }} />
       {/* Header bar */}
       <div className={`flex items-center justify-between px-3 py-2 ${data.locked ? 'cursor-default' : 'drag-handle cursor-grab'}`}>
