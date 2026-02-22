@@ -187,6 +187,15 @@ export async function streamChatMessage(messages, canvasContext, voiceToneSettin
       headers: { 'Content-Type': 'application/json', ...auth },
       body: JSON.stringify(payload)
     });
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      // Server returned HTML error page (likely a timeout or function crash)
+      const status = response.status;
+      if (status === 502 || status === 504) {
+        throw new Error('AI request timed out. Try using Haiku (faster model) or reducing canvas content.');
+      }
+      throw new Error(`Server error (${status}). Please try again.`);
+    }
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
     onDone?.(data.message, data.createNode);

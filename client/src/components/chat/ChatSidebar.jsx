@@ -87,19 +87,21 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
     });
 
     // Exclude group nodes (they have no content), add group membership
+    // Trim long text fields to keep payload within serverless limits
+    const trim = (s, max = 12000) => s && s.length > max ? s.slice(0, max) + '\n[truncated...]' : s;
     const nodeContext = nodes
       .filter(node => node.type !== 'group')
       .map(node => ({
         id: node.id,
         type: node.type,
         label: node.data?.label || '',
-        content: node.data?.content || '',
+        content: trim(node.data?.content || ''),
         filename: node.data?.filename || '',
         pageCount: node.data?.pageCount || 0,
-        parsedText: node.data?.parsedText || '',
+        parsedText: trim(node.data?.parsedText || ''),
         url: node.data?.url || '',
         title: node.data?.title || '',
-        transcript: node.data?.transcript || '',
+        transcript: trim(node.data?.transcript || ''),
         imageUrl: node.data?.imageUrl || '',
         description: node.data?.description || '',
         language: node.data?.language || '',
