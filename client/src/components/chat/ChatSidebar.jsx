@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Loader2, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Cpu, Square, Globe } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Send, Loader2, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Cpu, Square, Globe, Layers, X } from 'lucide-react';
 import { streamChatMessage, webSearch } from '../../utils/api.js';
 import MarkdownMessage from './MarkdownMessage.jsx';
 import PromptTemplates from './PromptTemplates.jsx';
@@ -51,6 +51,7 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
   const [selectedModel, setSelectedModel] = useState('sonnet');
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
+  const [selectedGroupIds, setSelectedGroupIds] = useState([]);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const streamingContentRef = useRef('');
@@ -60,31 +61,62 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Build canvas context from current nodes, including edge connections
-  const buildCanvasContext = useCallback(() => {
-    const nodeContext = nodes.map(node => ({
-      id: node.id,
-      type: node.type,
-      label: node.data?.label || '',
-      content: node.data?.content || '',
-      filename: node.data?.filename || '',
-      pageCount: node.data?.pageCount || 0,
-      parsedText: node.data?.parsedText || '',
-      url: node.data?.url || '',
-      title: node.data?.title || '',
-      transcript: node.data?.transcript || '',
-      imageUrl: node.data?.imageUrl || '',
-      description: node.data?.description || '',
-      language: node.data?.language || ''
-    }));
+  // Available groups on canvas
+  const availableGroups = useMemo(() =>
+    nodes.filter(n => n.type === 'group').map(n => ({ id: n.id, label: n.data?.label || 'Untitled Group' })),
+    [nodes]
+  );
 
-    // Include edge connections so AI knows which nodes are linked
+  // Remove stale group IDs when groups are deleted
+  useEffect(() => {
+    const groupIds = new Set(availableGroups.map(g => g.id));
+    setSelectedGroupIds(prev => {
+      const filtered = prev.filter(id => groupIds.has(id));
+      return filtered.length !== prev.length ? filtered : prev;
+    });
+  }, [availableGroups]);
+
+  // Build canvas context from current nodes, including edge connections and group membership
+  const buildCanvasContext = useCallback(() => {
+    // Build group label map
+    const groupLabelMap = {};
+    nodes.forEach(node => {
+      if (node.type === 'group') {
+        groupLabelMap[node.id] = node.data?.label || 'Untitled Group';
+      }
+    });
+
+    // Exclude group nodes (they have no content), add group membership
+    const nodeContext = nodes
+      .filter(node => node.type !== 'group')
+      .map(node => ({
+        id: node.id,
+        type: node.type,
+        label: node.data?.label || '',
+        content: node.data?.content || '',
+        filename: node.data?.filename || '',
+        pageCount: node.data?.pageCount || 0,
+        parsedText: node.data?.parsedText || '',
+        url: node.data?.url || '',
+        title: node.data?.title || '',
+        transcript: node.data?.transcript || '',
+        imageUrl: node.data?.imageUrl || '',
+        description: node.data?.description || '',
+        language: node.data?.language || '',
+        groupId: node.parentNode || null,
+        groupLabel: node.parentNode ? (groupLabelMap[node.parentNode] || null) : null
+      }));
+
+    // Edge connections
     const edgeContext = (edges || []).map(edge => ({
       from: edge.source,
       to: edge.target
     }));
 
-    return { nodes: nodeContext, edges: edgeContext };
+    // Groups array for AI awareness
+    const groups = Object.entries(groupLabelMap).map(([id, label]) => ({ id, label }));
+
+    return { nodes: nodeContext, edges: edgeContext, groups };
   }, [nodes, edges]);
 
   const handleSend = useCallback(async () => {
@@ -101,7 +133,12 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
     streamingContentRef.current = '';
 
     try {
-      const { nodes: nodeContext, edges: edgeContext } = buildCanvasContext();
+      const { nodes: allNodes, edges: edgeContext, groups: groupContext } = buildCanvasContext();
+
+      // Filter nodes by selected groups (ungrouped nodes always included)
+      const nodeContext = selectedGroupIds.length > 0
+        ? allNodes.filter(n => selectedGroupIds.includes(n.groupId) || n.groupId === null)
+        : allNodes;
 
       // If web search enabled, search before sending to AI
       let searchContext = null;
@@ -123,6 +160,8 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
         selectedModel,
         edgeContext,
         searchContext,
+        groupContext,
+        selectedGroupIds,
         {
           onChunk: (text) => {
             streamingContentRef.current += text;
@@ -157,7 +196,7 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
       setIsStreaming(false);
       setIsLoading(false);
     }
-  }, [input, messages, isLoading, buildCanvasContext, voiceToneSettings, selectedModel, onCreateNode, webSearchEnabled]);
+  }, [input, messages, isLoading, buildCanvasContext, voiceToneSettings, selectedModel, onCreateNode, webSearchEnabled, selectedGroupIds]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -264,6 +303,44 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
           </div>
         </div>
 
+        {/* Group filter chips */}
+        {availableGroups.length > 0 && (
+          <div className="px-4 py-2 border-b border-canvas-border flex-shrink-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Layers size={12} className="text-gray-500 flex-shrink-0" />
+              <button
+                onClick={() => setSelectedGroupIds([])}
+                className={`px-2 py-0.5 text-[11px] rounded-full border transition-colors ${
+                  selectedGroupIds.length === 0
+                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+                    : 'bg-canvas-bg border-canvas-border text-gray-500 hover:text-gray-300 hover:border-gray-600'
+                }`}
+              >
+                All
+              </button>
+              {availableGroups.map(g => {
+                const isActive = selectedGroupIds.includes(g.id);
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => setSelectedGroupIds(prev =>
+                      isActive ? prev.filter(id => id !== g.id) : [...prev, g.id]
+                    )}
+                    className={`px-2 py-0.5 text-[11px] rounded-full border transition-colors flex items-center gap-1 ${
+                      isActive
+                        ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+                        : 'bg-canvas-bg border-canvas-border text-gray-500 hover:text-gray-300 hover:border-gray-600'
+                    }`}
+                  >
+                    {g.label}
+                    {isActive && <X size={10} className="opacity-60" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && (
@@ -355,7 +432,12 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={webSearchEnabled ? "Search the web & ask AI..." : "Ask about your canvas..."}
+              placeholder={
+                webSearchEnabled ? "Search the web & ask AI..."
+                : selectedGroupIds.length === 1 ? `Ask about ${availableGroups.find(g => g.id === selectedGroupIds[0])?.label || 'group'}...`
+                : selectedGroupIds.length > 1 ? `Ask about ${selectedGroupIds.length} groups...`
+                : "Ask about your canvas..."
+              }
               rows={1}
               className="flex-1 bg-canvas-bg text-white text-sm px-4 py-3 rounded-xl border border-canvas-border outline-none focus:border-accent resize-none max-h-[120px] placeholder-gray-600"
               style={{ minHeight: '44px' }}

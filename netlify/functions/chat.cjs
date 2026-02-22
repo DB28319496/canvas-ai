@@ -65,7 +65,23 @@ function buildSearchBlock(searchContext) {
   return `\n\n---WEB SEARCH RESULTS---\n${results}\n---END SEARCH RESULTS---`;
 }
 
-function buildSystemPrompt(canvasContext, voiceToneSettings, edgeContext, searchContext) {
+function renderNode(node, index) {
+  const label = node.label || `Node ${index + 1}`;
+  switch (node.type) {
+    case 'text': return `[TEXT NODE: "${label}"]\n${stripHtml(node.content) || '(empty)'}`;
+    case 'image': return `[IMAGE NODE: "${label}"]\n${node.description || ''}`;
+    case 'pdf': return `[PDF NODE: "${label}"]\n${node.content || '(not parsed)'}`;
+    case 'youtube': return `[YOUTUBE NODE: "${label}"]\nTitle: ${node.title || ''}\nTranscript:\n${node.transcript || '(no transcript)'}`;
+    case 'voice': return `[VOICE NOTE: "${label}"]\n${node.transcript || '(no transcript)'}`;
+    case 'web': return `[WEB PAGE: "${label}"]\n${node.content || '(not scraped)'}`;
+    case 'code': return `[CODE NODE: "${label}"]\n\`\`\`${node.language || 'js'}\n${node.content || ''}\n\`\`\``;
+    case 'sticky': return `[STICKY NOTE: "${label}"]\n${node.content || '(empty)'}`;
+    case 'embed': return `[EMBED NODE: "${label}"]\nURL: ${node.url || ''}`;
+    default: return `[NODE: "${label}"]\n${node.content || ''}`;
+  }
+}
+
+function buildSystemPrompt(canvasContext, voiceToneSettings, edgeContext, searchContext, groupContext, focusedGroupIds) {
   const vtBlock = buildVoiceToneBlock(voiceToneSettings);
   const edgeBlock = buildEdgeContext(canvasContext, edgeContext);
   const searchBlock = buildSearchBlock(searchContext);
@@ -74,30 +90,50 @@ function buildSystemPrompt(canvasContext, voiceToneSettings, edgeContext, search
     return `You are Canvas AI, a helpful assistant for a visual canvas workspace. The user's canvas is currently empty. Help them get started or answer any questions.${searchBlock}${vtBlock}`;
   }
 
-  const blocks = canvasContext.map((node, i) => {
-    const label = node.label || `Node ${i + 1}`;
-    switch (node.type) {
-      case 'text': return `[TEXT NODE: "${label}"]\n${stripHtml(node.content) || '(empty)'}`;
-      case 'image': return `[IMAGE NODE: "${label}"]\n${node.description || ''}`;
-      case 'pdf': return `[PDF NODE: "${label}"]\n${node.content || '(not parsed)'}`;
-      case 'youtube': return `[YOUTUBE NODE: "${label}"]\nTitle: ${node.title || ''}\nTranscript:\n${node.transcript || '(no transcript)'}`;
-      case 'voice': return `[VOICE NOTE: "${label}"]\n${node.transcript || '(no transcript)'}`;
-      case 'web': return `[WEB PAGE: "${label}"]\n${node.content || '(not scraped)'}`;
-      case 'code': return `[CODE NODE: "${label}"]\n\`\`\`${node.language || 'js'}\n${node.content || ''}\n\`\`\``;
-      case 'sticky': return `[STICKY NOTE: "${label}"]\n${node.content || '(empty)'}`;
-      case 'embed': return `[EMBED NODE: "${label}"]\nURL: ${node.url || ''}`;
-      default: return `[NODE: "${label}"]\n${node.content || ''}`;
+  // Build group label lookup
+  const groupLabels = {};
+  (groupContext || []).forEach(g => { groupLabels[g.id] = g.label; });
+
+  // Organize nodes by group
+  const grouped = {};
+  const ungrouped = [];
+  canvasContext.forEach((node, i) => {
+    if (node.groupId) {
+      if (!grouped[node.groupId]) grouped[node.groupId] = [];
+      grouped[node.groupId].push({ node, index: i });
+    } else {
+      ungrouped.push({ node, index: i });
     }
   });
+
+  // Render sections
+  const sections = [];
+  for (const [groupId, items] of Object.entries(grouped)) {
+    const groupLabel = groupLabels[groupId] || 'Untitled Group';
+    const nodeBlocks = items.map(({ node, index }) => renderNode(node, index)).join('\n\n');
+    sections.push(`---GROUP: "${groupLabel}"---\n${nodeBlocks}\n---END GROUP---`);
+  }
+  if (ungrouped.length > 0) {
+    const nodeBlocks = ungrouped.map(({ node, index }) => renderNode(node, index)).join('\n\n');
+    sections.push(`---UNGROUPED NODES---\n${nodeBlocks}\n---END UNGROUPED---`);
+  }
+
+  let focusNote = '';
+  if (focusedGroupIds && focusedGroupIds.length > 0) {
+    const focusLabels = focusedGroupIds.map(id => groupLabels[id]).filter(Boolean);
+    if (focusLabels.length > 0) {
+      focusNote = `\n\nNOTE: The user is currently focused on these groups: ${focusLabels.map(l => `"${l}"`).join(', ')}. Prioritize content from these groups in your responses, but you may still reference other visible content if relevant.`;
+    }
+  }
 
   return `You are Canvas AI, a helpful assistant for a visual canvas workspace. The user has a canvas with the following content:
 
 ---CANVAS CONTENTS---
-${blocks.join('\n\n---\n\n')}
+${sections.join('\n\n')}
 ---END CANVAS CONTENTS---
-${edgeBlock}
+${edgeBlock}${focusNote}
 
-You have full awareness of everything on the user's canvas. Reference specific nodes when answering. Be helpful, creative, and thorough.
+You have full awareness of everything on the user's canvas. Nodes are organized into groups. Reference specific nodes and their group context when answering. Be helpful, creative, and thorough.
 
 IMPORTANT — Creating canvas nodes:
 If the user asks you to create/add content as a new note on the canvas, include this JSON block at the very end:
@@ -151,14 +187,14 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body || '{}');
-    const { messages, canvasContext, voiceToneSettings, model, edgeContext, searchContext } = body;
+    const { messages, canvasContext, voiceToneSettings, model, edgeContext, searchContext, groupContext, focusedGroupIds } = body;
 
     if (!messages || !Array.isArray(messages)) {
       return respond(400, { error: 'Messages array is required' });
     }
 
     const client = await getClient();
-    const systemPrompt = buildSystemPrompt(canvasContext, voiceToneSettings, edgeContext, searchContext);
+    const systemPrompt = buildSystemPrompt(canvasContext, voiceToneSettings, edgeContext, searchContext, groupContext, focusedGroupIds);
     const modelId = modelMap[model] || modelMap.sonnet;
 
     const claudeMessages = messages.map(msg => ({

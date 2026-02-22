@@ -332,6 +332,8 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         'haiku', // fast model
         [],
         null,
+        [], // no group context
+        [], // no focused groups
         {
           onChunk: () => {}, // don't need incremental updates
           onDone: (finalMessage) => {

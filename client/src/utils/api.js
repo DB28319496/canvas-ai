@@ -174,10 +174,10 @@ export async function scrapeUrl(url) {
   return handleResponse(response);
 }
 
-// Send a chat message — tries streaming SSE first (for local dev), falls back to non-streaming.
-export async function streamChatMessage(messages, canvasContext, voiceToneSettings, model = 'sonnet', edgeContext = [], searchContext = null, { onChunk, onDone, onError }) {
+// Send a chat message — tries non-streaming first (serverless), falls back to SSE streaming (local dev).
+export async function streamChatMessage(messages, canvasContext, voiceToneSettings, model = 'sonnet', edgeContext = [], searchContext = null, groupContext = [], focusedGroupIds = [], { onChunk, onDone, onError }) {
   const auth = await getAuthHeaders();
-  const payload = { messages, canvasContext, voiceToneSettings, model, edgeContext, searchContext };
+  const payload = { messages, canvasContext, voiceToneSettings, model, edgeContext, searchContext, groupContext, focusedGroupIds };
 
   // Try non-streaming first (works reliably on serverless platforms)
   try {
