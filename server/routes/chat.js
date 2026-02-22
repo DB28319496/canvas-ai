@@ -238,7 +238,7 @@ router.post('/', async (req, res) => {
 
     const response = await getClient().messages.create({
       model: modelId,
-      max_tokens: 4096,
+      max_tokens: 2048,
       system: systemPrompt,
       messages: claudeMessages
     });
@@ -298,7 +298,7 @@ router.post('/stream', async (req, res) => {
 
     const stream = getClient().messages.stream({
       model: modelId,
-      max_tokens: 4096,
+      max_tokens: 2048,
       system: systemPrompt,
       messages: claudeMessages
     });

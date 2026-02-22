@@ -82,37 +82,37 @@ export default function Toolbar({
 
   return (
     <div
-      className="absolute top-0 left-0 z-30 flex items-center justify-between px-4 py-2 bg-canvas-panel/90 backdrop-blur-md border-b border-canvas-border"
+      className="absolute top-0 left-0 z-30 flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-canvas-panel/90 backdrop-blur-md border-b border-canvas-border"
       style={{ right: chatOpen ? `${chatSidebarWidth}px` : '0' }}
     >
       {/* Left: Logo and project name */}
-      <div className="flex items-center gap-3 flex-shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
         <button
           onClick={onGoHome}
-          className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-canvas-hover transition-colors"
+          className="flex items-center gap-2 px-1.5 sm:px-2 py-1 rounded-lg hover:bg-canvas-hover transition-colors"
           title="Back to Dashboard"
         >
-          <Sparkles size={20} className="text-accent" />
+          <Sparkles size={18} className="text-accent sm:w-5 sm:h-5" />
           <span className="text-sm font-semibold text-white hidden xl:inline">Canvas AI</span>
         </button>
 
-        <div className="w-px h-6 bg-canvas-border" />
+        <div className="w-px h-6 bg-canvas-border hidden sm:block" />
 
         <input
           value={projectName}
           onChange={(e) => onProjectNameChange(e.target.value)}
-          className="text-sm text-gray-300 bg-transparent border-none outline-none hover:text-white focus:text-white transition-colors w-[120px]"
-          placeholder="Untitled Project"
+          className="text-xs sm:text-sm text-gray-300 bg-transparent border-none outline-none hover:text-white focus:text-white transition-colors w-[80px] sm:w-[120px]"
+          placeholder="Untitled"
         />
       </div>
 
       {/* Center: Node type buttons */}
-      <div data-tour="toolbar-nodes" className="flex items-center gap-1 px-2 py-1 bg-canvas-bg/60 rounded-xl border border-canvas-border min-w-0 overflow-x-auto scrollbar-hide">
+      <div data-tour="toolbar-nodes" className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-1 bg-canvas-bg/60 rounded-xl border border-canvas-border min-w-0 overflow-x-auto scrollbar-hide">
         {nodeButtons.map(({ type, icon: Icon, label, color }) => (
           <button
             key={type}
             onClick={() => onAddNode(type)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-all text-xs flex-shrink-0"
+            className="flex items-center gap-1.5 px-1.5 sm:px-2.5 py-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-all text-xs flex-shrink-0"
             title={`Add ${label} Node`}
           >
             <Icon size={14} className={color} />
@@ -123,8 +123,8 @@ export default function Toolbar({
 
       {/* Right: Primary actions + More menu */}
       <div className="flex items-center gap-0.5 flex-shrink-0">
-        {/* Undo/Redo/Search/Zoom */}
-        <div data-tour="toolbar-actions" className="flex items-center gap-0.5">
+        {/* Undo/Redo/Search/Zoom — hidden on mobile, in More menu */}
+        <div data-tour="toolbar-actions" className="hidden sm:flex items-center gap-0.5">
         <button
           onClick={onUndo}
           className="p-1.5 text-gray-400 hover:text-white hover:bg-canvas-hover rounded-lg transition-colors"
@@ -176,7 +176,7 @@ export default function Toolbar({
 
         </div>
 
-        <div className="w-px h-5 bg-canvas-border mx-0.5" />
+        <div className="w-px h-5 bg-canvas-border mx-0.5 hidden sm:block" />
 
         {/* Save */}
         <button
@@ -189,7 +189,7 @@ export default function Toolbar({
           <span className="hidden xl:inline">Save</span>
         </button>
 
-        <div className="w-px h-5 bg-canvas-border mx-0.5" />
+        <div className="w-px h-5 bg-canvas-border mx-0.5 hidden sm:block" />
 
         {/* More menu */}
         <div className="relative" ref={moreRef}>
@@ -217,7 +217,7 @@ export default function Toolbar({
                   <span className="ml-auto text-[10px] text-gray-600">&rsaquo;</span>
                 </button>
                 {showLayoutMenu && (
-                  <div className="absolute right-full top-0 mr-1 bg-canvas-panel border border-canvas-border rounded-lg shadow-xl overflow-hidden z-50 min-w-[130px]">
+                  <div className="sm:absolute sm:right-full sm:top-0 sm:mr-1 bg-canvas-bg sm:bg-canvas-panel border-t sm:border border-canvas-border sm:rounded-lg sm:shadow-xl overflow-hidden z-50 sm:min-w-[130px]">
                     {[
                       { id: 'grid', label: 'Grid', desc: 'Even grid' },
                       { id: 'tree', label: 'Tree', desc: 'Hierarchy' },
@@ -226,7 +226,7 @@ export default function Toolbar({
                       <button
                         key={layout.id}
                         onClick={() => { onAutoLayout?.(layout.id); setShowMore(false); setShowLayoutMenu(false); }}
-                        className="flex items-center justify-between gap-3 w-full px-3 py-2 text-xs text-gray-400 hover:text-white hover:bg-canvas-hover transition-colors"
+                        className="flex items-center justify-between gap-3 w-full px-3 py-2 text-xs text-gray-400 hover:text-white hover:bg-canvas-hover transition-colors pl-8 sm:pl-3"
                       >
                         <span className="font-medium">{layout.label}</span>
                         <span className="text-[10px] text-gray-600">{layout.desc}</span>

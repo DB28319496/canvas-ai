@@ -204,7 +204,7 @@ exports.handler = async (event) => {
 
     const response = await client.messages.create({
       model: modelId,
-      max_tokens: 4096,
+      max_tokens: 2048,
       system: systemPrompt,
       messages: claudeMessages
     });

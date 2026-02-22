@@ -63,7 +63,7 @@ export default function VersionHistory({ isOpen, onClose, projectId, onRestore }
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-30 w-[340px] bg-canvas-panel border-l border-canvas-border flex flex-col shadow-2xl">
+    <div className="fixed inset-y-0 right-0 z-30 w-full sm:w-[340px] bg-canvas-panel border-l border-canvas-border flex flex-col shadow-2xl">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-canvas-border flex-shrink-0">
         <div className="flex items-center gap-2">

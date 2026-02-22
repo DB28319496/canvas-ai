@@ -244,15 +244,15 @@ export default function Dashboard({ onNewProject, onLoadProject }) {
   return (
     <div className="h-full bg-canvas-bg flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-8 py-6 border-b border-canvas-border">
-        <div className="flex items-center gap-3">
-          <Sparkles size={28} className="text-accent" />
+      <div className="flex items-center justify-between px-4 sm:px-8 py-4 sm:py-6 border-b border-canvas-border">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Sparkles size={24} className="text-accent sm:w-7 sm:h-7" />
           <div>
-            <h1 className="text-xl font-bold text-white">Canvas AI</h1>
-            <p className="text-xs text-gray-500">Your AI-powered visual workspace</p>
+            <h1 className="text-lg sm:text-xl font-bold text-white">Canvas AI</h1>
+            <p className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">Your AI-powered visual workspace</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {user && (
             <span className="text-xs text-gray-500 hidden sm:inline">{user.email}</span>
           )}
@@ -273,19 +273,20 @@ export default function Dashboard({ onNewProject, onLoadProject }) {
           </button>
           <button
             onClick={() => setShowTemplates(!showTemplates)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-accent text-white text-sm font-medium rounded-xl hover:bg-accent-hover transition-colors"
+            className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-accent text-white text-xs sm:text-sm font-medium rounded-xl hover:bg-accent-hover transition-colors"
           >
             <Plus size={16} />
-            New Canvas
+            <span className="hidden sm:inline">New Canvas</span>
+            <span className="sm:hidden">New</span>
           </button>
         </div>
       </div>
 
       {/* Template picker */}
       {showTemplates && (
-        <div className="px-8 py-4 border-b border-canvas-border bg-canvas-panel/50">
+        <div className="px-4 sm:px-8 py-4 border-b border-canvas-border bg-canvas-panel/50">
           <div className="text-xs text-gray-500 font-medium mb-3">Choose a template:</div>
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-1">
             {canvasTemplates.map(t => (
               <button
                 key={t.id}
@@ -293,7 +294,7 @@ export default function Dashboard({ onNewProject, onLoadProject }) {
                   onNewProject(t.template);
                   setShowTemplates(false);
                 }}
-                className="flex-shrink-0 w-[160px] p-3 bg-canvas-bg border border-canvas-border rounded-xl hover:border-accent/50 hover:shadow-lg transition-all text-left group"
+                className="flex-shrink-0 w-[130px] sm:w-[160px] p-2.5 sm:p-3 bg-canvas-bg border border-canvas-border rounded-xl hover:border-accent/50 hover:shadow-lg transition-all text-left group"
               >
                 <t.icon size={20} className={`${t.color} mb-2`} />
                 <div className="text-xs font-medium text-white group-hover:text-accent-hover">{t.label}</div>
@@ -303,7 +304,7 @@ export default function Dashboard({ onNewProject, onLoadProject }) {
             {customTemplates.map(t => (
               <div
                 key={t.id}
-                className="flex-shrink-0 w-[160px] p-3 bg-canvas-bg border border-canvas-border rounded-xl hover:border-accent/50 hover:shadow-lg transition-all text-left group relative"
+                className="flex-shrink-0 w-[130px] sm:w-[160px] p-2.5 sm:p-3 bg-canvas-bg border border-canvas-border rounded-xl hover:border-accent/50 hover:shadow-lg transition-all text-left group relative"
               >
                 <button
                   onClick={() => {
@@ -330,7 +331,7 @@ export default function Dashboard({ onNewProject, onLoadProject }) {
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-8">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 size={24} className="text-accent animate-spin mb-3" />
@@ -378,7 +379,7 @@ export default function Dashboard({ onNewProject, onLoadProject }) {
                     <h3 className="text-sm font-medium text-white group-hover:text-accent-hover transition-colors truncate pr-2">
                       {project.name}
                     </h3>
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       {/* Color tag */}
                       <div className="relative">
                         <button
@@ -452,7 +453,7 @@ export default function Dashboard({ onNewProject, onLoadProject }) {
       {/* Save as Template modal */}
       {saveAsTemplateFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setSaveAsTemplateFor(null)}>
-          <div className="bg-canvas-panel border border-canvas-border rounded-2xl p-6 w-[360px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-canvas-panel border border-canvas-border rounded-2xl p-6 w-[calc(100%-2rem)] sm:w-[360px] shadow-2xl mx-4 sm:mx-0" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-semibold text-white mb-1">Save as Template</h3>
             <p className="text-xs text-gray-500 mb-4">This project will be available as a template when creating new canvases.</p>
             <input

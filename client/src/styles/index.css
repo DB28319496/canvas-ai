@@ -210,3 +210,37 @@ html, body, #root {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
+
+/* ===== Mobile optimizations ===== */
+@media (max-width: 767px) {
+  /* Hide minimap on mobile — too small to be useful */
+  .react-flow__minimap {
+    display: none !important;
+  }
+
+  /* Make React Flow controls more touch-friendly */
+  .react-flow__controls {
+    bottom: 12px !important;
+    left: 8px !important;
+  }
+  .react-flow__controls-button {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .react-flow__controls-button svg {
+    max-width: 16px !important;
+    max-height: 16px !important;
+  }
+
+  /* Larger node resize handles for touch */
+  .react-flow__resize-control.handle {
+    width: 14px !important;
+    height: 14px !important;
+    opacity: 1 !important;
+  }
+
+  /* Always show resize lines on mobile (no hover) */
+  .react-flow__resize-control.line {
+    border-color: #6366f1 !important;
+  }
+}

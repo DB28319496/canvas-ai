@@ -4,6 +4,17 @@ import { streamChatMessage, webSearch } from '../../utils/api.js';
 import MarkdownMessage from './MarkdownMessage.jsx';
 import PromptTemplates from './PromptTemplates.jsx';
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < breakpoint);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 const models = [
   { id: 'haiku', label: 'Haiku', desc: 'Fast & light' },
   { id: 'sonnet', label: 'Sonnet', desc: 'Balanced' },
@@ -11,6 +22,7 @@ const models = [
 ];
 
 export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneSettings, onCreateNode, onWidthChange }) {
+  const isMobile = useIsMobile();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sidebarWidth, setSidebarWidth] = useState(380);
@@ -56,6 +68,15 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
   const inputRef = useRef(null);
   const streamingContentRef = useRef('');
 
+  // On mobile, report full width to parent so toolbar hides behind the overlay
+  useEffect(() => {
+    if (isMobile && isOpen) {
+      onWidthChange?.(window.innerWidth);
+    } else if (!isMobile && isOpen) {
+      onWidthChange?.(sidebarWidth);
+    }
+  }, [isMobile, isOpen, sidebarWidth, onWidthChange]);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -88,7 +109,7 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
 
     // Exclude group nodes (they have no content), add group membership
     // Trim long text fields to keep payload within serverless limits
-    const trim = (s, max = 12000) => s && s.length > max ? s.slice(0, max) + '\n[truncated...]' : s;
+    const trim = (s, max = 6000) => s && s.length > max ? s.slice(0, max) + '\n[truncated...]' : s;
     const nodeContext = nodes
       .filter(node => node.type !== 'group')
       .map(node => ({
@@ -256,16 +277,16 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
         </button>
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — full-screen overlay on mobile, side panel on desktop */}
       <div
         data-tour="chat-sidebar"
         className={`fixed right-0 top-0 h-full z-20 bg-canvas-panel border-l border-canvas-border flex flex-col ${
           isOpen ? '' : 'w-0 overflow-hidden transition-all duration-300'
         }`}
-        style={isOpen ? { width: sidebarWidth } : undefined}
+        style={isOpen ? { width: isMobile ? '100%' : sidebarWidth } : undefined}
       >
-        {/* Resize drag handle */}
-        {isOpen && (
+        {/* Resize drag handle — hidden on mobile */}
+        {isOpen && !isMobile && (
           <div
             onMouseDown={handleResizeMouseDown}
             className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize z-30 group"

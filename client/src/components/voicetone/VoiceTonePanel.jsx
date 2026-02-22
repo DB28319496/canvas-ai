@@ -36,12 +36,12 @@ export default function VoiceTonePanel({ isOpen, onClose, settings, onSettingsCh
   const hasSettings = (preset?.length > 0) || customDescription?.trim() || writingSamples?.trim();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 sm:pt-16">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Panel */}
-      <div className="relative w-[520px] max-h-[80vh] bg-canvas-panel border border-canvas-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in">
+      <div className="relative w-[calc(100%-2rem)] sm:w-[520px] max-h-[80vh] bg-canvas-panel border border-canvas-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in mx-4 sm:mx-0">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-canvas-border flex-shrink-0">
           <div className="flex items-center gap-2.5">
@@ -105,7 +105,7 @@ export default function VoiceTonePanel({ isOpen, onClose, settings, onSettingsCh
               <p className="text-xs text-gray-500 mb-4">
                 Select one or more tone presets. The AI will blend them when generating content.
               </p>
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {presetTones.map((tone) => {
                   const isSelected = preset?.includes(tone.id);
                   return (

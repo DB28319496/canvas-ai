@@ -37,7 +37,7 @@ export default function SearchPanel({ isOpen, onClose, nodes, onFocusNode }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed top-14 left-1/2 -translate-x-1/2 z-40 w-[420px] bg-canvas-panel border border-canvas-border rounded-xl shadow-2xl overflow-hidden animate-in">
+    <div className="fixed top-14 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] sm:w-[420px] bg-canvas-panel border border-canvas-border rounded-xl shadow-2xl overflow-hidden animate-in">
       {/* Search input */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-canvas-border">
         <Search size={16} className="text-gray-500 flex-shrink-0" />
