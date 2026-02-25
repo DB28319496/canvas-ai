@@ -137,15 +137,45 @@ export default function CanvasWorkspace({ project, onGoHome }) {
     }
   }, [project]);
 
-  // Auto-save every 60 seconds
+  // Auto-save every 15 seconds
   const autoSaveRef = useRef(null);
   useEffect(() => {
     autoSaveRef.current = setInterval(() => {
       if (nodes.length > 0 || projectId) {
         handleSaveProjectSilent();
       }
-    }, 60000);
+    }, 15000);
     return () => clearInterval(autoSaveRef.current);
+  }, [nodes, edges, projectId, projectName]);
+
+  // Save on page unload (refresh, close tab, navigate away)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (nodes.length === 0 && !projectId) return;
+      // Save to localStorage as emergency backup
+      try {
+        const cleanNodes = nodes.map(node => ({
+          ...node,
+          data: Object.fromEntries(
+            Object.entries(node.data).filter(([key]) =>
+              !['onChange', 'onDelete', 'onFileUpload', 'onYouTubeSubmit', 'onUrlSubmit', 'onAiAction', 'onToggleLock', 'onGenerateNotes', 'generatingNotes', 'isDropTarget'].includes(key)
+            )
+          )
+        }));
+        const chatMessages = window.__canvasAIChatMessages || [];
+        const backup = {
+          id: projectId,
+          name: projectName || 'Untitled Project',
+          nodes: cleanNodes,
+          edges,
+          chatMessages,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('canvas-ai-backup', JSON.stringify(backup));
+      } catch { /* localStorage full or unavailable */ }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [nodes, edges, projectId, projectName]);
 
   // Handle node data changes
@@ -751,6 +781,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
       setProjectId(result.id);
       setSaveToast('saved');
       setTimeout(() => setSaveToast(null), 2000);
+      try { localStorage.removeItem('canvas-ai-backup'); } catch {}
     } catch (error) {
       setSaveToast('error');
       setTimeout(() => setSaveToast(null), 3000);
@@ -783,6 +814,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
       });
 
       setProjectId(result.id);
+      try { localStorage.removeItem('canvas-ai-backup'); } catch {}
     } catch {
       // Silent fail for auto-save
     }

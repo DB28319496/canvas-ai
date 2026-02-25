@@ -214,6 +214,7 @@ export async function streamChatMessage(messages, canvasContext, voiceToneSettin
     });
 
     if (!response.ok) throw new Error(`Request failed (${response.status})`);
+    if (!response.body) throw new Error('No response stream available');
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -233,11 +234,16 @@ export async function streamChatMessage(messages, canvasContext, voiceToneSettin
           if (event.type === 'text') onChunk?.(event.text);
           else if (event.type === 'done') { doneReceived = true; onDone?.(event.message, event.createNode); }
           else if (event.type === 'error') { onError?.(event.error); return; }
-        } catch {}
+        } catch { /* skip malformed SSE lines */ }
       }
     }
     if (doneReceived) return;
-  } catch {}
+  } catch (streamErr) {
+    // Stream fallback also failed — report the most useful error
+    const msg = nonStreamError?.message || streamErr?.message || 'Failed to get AI response. Please try again.';
+    onError?.(msg);
+    return;
+  }
 
   onError?.(nonStreamError?.message || 'Failed to get AI response. Please try again.');
 }
