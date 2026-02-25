@@ -22,6 +22,9 @@ import { gridLayout, treeLayout, radialLayout } from '../utils/autoLayout.js';
 import { exportAsPdf } from '../utils/exportPdf.js';
 import AIQuickActions from './ai/AIQuickActions.jsx';
 import PresentationMode from './presentation/PresentationMode.jsx';
+import DeletableEdge from './edges/DeletableEdge.jsx';
+
+const edgeTypes = { deletable: DeletableEdge };
 
 const defaultDimensions = {
   text:    { width: 320, height: 280 },
@@ -593,9 +596,32 @@ export default function CanvasWorkspace({ project, onGoHome }) {
     }));
   }, [nodes, setNodes]);
 
-  const onConnect = useCallback((params) => {
-    setEdges(eds => addEdge({ ...params, animated: true, style: { stroke: '#6366f1' } }, eds));
+  const handleEdgeDelete = useCallback((edgeId) => {
+    setEdges(eds => eds.filter(e => e.id !== edgeId));
   }, [setEdges]);
+
+  // Upgrade existing edges to use the custom deletable type
+  useEffect(() => {
+    setEdges(eds => {
+      const needsUpgrade = eds.some(e => e.type !== 'deletable' || !e.data?.onDelete);
+      if (!needsUpgrade) return eds;
+      return eds.map(e => ({
+        ...e,
+        type: 'deletable',
+        data: { ...e.data, onDelete: handleEdgeDelete }
+      }));
+    });
+  }, [handleEdgeDelete, setEdges]);
+
+  const onConnect = useCallback((params) => {
+    setEdges(eds => addEdge({
+      ...params,
+      type: 'deletable',
+      animated: true,
+      style: { stroke: '#6366f1' },
+      data: { onDelete: handleEdgeDelete }
+    }, eds));
+  }, [setEdges, handleEdgeDelete]);
 
   const handleZoomIn = useCallback(() => {
     reactFlowInstance.current?.zoomIn();
@@ -1007,6 +1033,7 @@ export default function CanvasWorkspace({ project, onGoHome }) {
         onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onInit={(instance) => {
           reactFlowInstance.current = instance;
           // Always fit view when project has nodes for a good initial overview
