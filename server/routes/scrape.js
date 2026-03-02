@@ -3,6 +3,31 @@ import * as cheerio from 'cheerio';
 
 const router = Router();
 
+// Fetch rendered content via Jina Reader (handles JS-rendered pages)
+async function fetchWithJina(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(`https://r.jina.ai/${url}`, {
+      signal: controller.signal,
+      headers: {
+        'Accept': 'text/plain',
+        'X-Return-Format': 'text'
+      }
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+    const text = await response.text();
+    // Jina returns markdown — clean it up and truncate
+    return text?.trim() || null;
+  } catch {
+    clearTimeout(timeout);
+    return null;
+  }
+}
+
 // POST /api/scrape — Fetch and extract content from a URL
 router.post('/', async (req, res) => {
   try {
@@ -72,14 +97,22 @@ router.post('/', async (req, res) => {
         .join('\n\n');
     }
 
-    // Truncate to 5000 chars
-    if (content.length > 5000) {
-      content = content.slice(0, 5000) + '...';
+    // If static scrape found little/no content, try Jina Reader for JS-rendered pages
+    if (!content || content.length < 100) {
+      const jinaContent = await fetchWithJina(parsedUrl.href);
+      if (jinaContent && jinaContent.length > (content?.length || 0)) {
+        content = jinaContent;
+      }
     }
 
-    // Detect JS-rendered pages with little/no static content
+    // Truncate to 8000 chars (increased to support richer content)
+    if (content.length > 8000) {
+      content = content.slice(0, 8000) + '\n\n[Content truncated...]';
+    }
+
+    // Final fallback if both methods failed
     if (!content) {
-      content = '(This page is dynamically rendered and its content could not be extracted. You can still reference it by URL in the AI chat.)';
+      content = '(Unable to extract content from this page. Try sharing a screenshot or pasting the text directly.)';
     }
 
     res.json({
