@@ -3,16 +3,15 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Copy, Check } from 'lucide-react';
 
-function CodeBlockCopy({ children }) {
+function CodeBlockCopy({ code }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(async () => {
-    const text = String(children).replace(/\n$/, '');
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {}
-  }, [children]);
+  }, [code]);
   return (
     <button
       onClick={handleCopy}
@@ -22,6 +21,14 @@ function CodeBlockCopy({ children }) {
       {copied ? <><Check size={10} className="text-green-400" /> Copied</> : <><Copy size={10} /> Copy</>}
     </button>
   );
+}
+
+// Extract text content from React children recursively
+function extractText(children) {
+  if (typeof children === 'string') return children;
+  if (Array.isArray(children)) return children.map(extractText).join('');
+  if (children?.props?.children) return extractText(children.props.children);
+  return '';
 }
 
 export default function MarkdownMessage({ content }) {
@@ -38,26 +45,33 @@ export default function MarkdownMessage({ content }) {
         li: ({ children }) => <li className="text-sm">{children}</li>,
         strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
         em: ({ children }) => <em className="italic">{children}</em>,
-        code: ({ inline, className, children }) => {
-          if (inline) {
-            return (
-              <code className="bg-white/10 text-pink-300 px-1.5 py-0.5 rounded text-xs font-mono">
-                {children}
-              </code>
-            );
-          }
+        // Code blocks (```code```) — handled via pre in react-markdown v10
+        pre: ({ children }) => {
+          // Extract language and text from the inner <code> element
+          const codeChild = React.Children.toArray(children).find(
+            c => c?.props?.className || c?.type === 'code'
+          );
+          const lang = codeChild?.props?.className?.replace('language-', '') || 'code';
+          const codeText = extractText(codeChild?.props?.children || children).replace(/\n$/, '');
+
           return (
             <div className="my-2 rounded-lg overflow-hidden border border-white/10">
               <div className="bg-white/5 px-3 py-1 text-[10px] text-gray-500 border-b border-white/10 flex items-center justify-between">
-                <span>{className?.replace('language-', '') || 'code'}</span>
-                <CodeBlockCopy>{children}</CodeBlockCopy>
+                <span>{lang}</span>
+                <CodeBlockCopy code={codeText} />
               </div>
               <pre className="bg-black/30 p-3 overflow-x-auto">
-                <code className="text-xs font-mono text-gray-200 leading-relaxed">{children}</code>
+                <code className="text-xs font-mono text-gray-200 leading-relaxed">{codeChild?.props?.children || children}</code>
               </pre>
             </div>
           );
         },
+        // Inline code (`code`) only
+        code: ({ children }) => (
+          <code className="bg-white/10 text-pink-300 px-1.5 py-0.5 rounded text-xs font-mono">
+            {children}
+          </code>
+        ),
         blockquote: ({ children }) => (
           <blockquote className="border-l-2 border-accent/50 pl-3 my-2 text-gray-400 italic">
             {children}
