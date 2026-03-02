@@ -55,20 +55,20 @@ export default function MarkdownMessage({ content }) {
           const codeText = extractText(codeChild?.props?.children || children).replace(/\n$/, '');
 
           return (
-            <div className="my-2 rounded-lg overflow-hidden border border-white/10">
-              <div className="bg-white/5 px-3 py-1 text-[10px] text-gray-500 border-b border-white/10 flex items-center justify-between">
-                <span>{lang}</span>
+            <div className="my-2 rounded-lg overflow-hidden border border-white/[0.08]">
+              <div className="bg-white/[0.04] px-3 py-1.5 text-[10px] text-gray-500 border-b border-white/[0.08] flex items-center justify-between">
+                <span className="uppercase tracking-wider">{lang}</span>
                 <CodeBlockCopy code={codeText} />
               </div>
-              <pre className="bg-black/30 p-3 overflow-x-auto">
-                <code className="text-xs font-mono text-gray-200 leading-relaxed">{codeChild?.props?.children || children}</code>
+              <pre className="bg-black/20 p-3 overflow-x-auto">
+                <code className="text-xs font-mono text-gray-300 leading-relaxed">{codeChild?.props?.children || children}</code>
               </pre>
             </div>
           );
         },
         // Inline code (`code`) only
         code: ({ children }) => (
-          <code className="bg-white/10 text-pink-300 px-1.5 py-0.5 rounded text-xs font-mono">
+          <code className="bg-white/[0.06] text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono border border-white/[0.08]">
             {children}
           </code>
         ),
