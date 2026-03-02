@@ -196,6 +196,38 @@ html, body, #root {
 .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
+/* Chat markdown — code blocks (theme-aware) */
+.code-block-container {
+  border: 1px solid rgba(128, 128, 128, 0.2);
+}
+.code-block-header {
+  background: rgba(128, 128, 128, 0.08);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+  color: inherit;
+}
+.code-block-body {
+  background: rgba(0, 0, 0, 0.06);
+  color: inherit;
+}
+[data-theme="light"] .code-block-body {
+  background: rgba(0, 0, 0, 0.04);
+}
+/* Chat list styling */
+.chat-markdown ul { list-style: none; }
+.chat-markdown ul > li { position: relative; padding-left: 16px; }
+.chat-markdown ul > li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #6366f1;
+}
+.chat-markdown ol > li { padding-left: 4px; }
+.chat-markdown ol > li::marker { color: #6366f1; font-weight: 600; }
+
 /* Typing indicator — iMessage-style bouncing dots */
 .typing-indicator {
   display: inline-flex;
