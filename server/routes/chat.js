@@ -111,7 +111,7 @@ function renderNode(node, index) {
     case 'voice':
       return `[VOICE NOTE: "${label}"]\nTranscript:\n${node.transcript || '(no transcript)'}`;
     case 'web':
-      return `[WEB PAGE: "${label}"]\nURL: ${node.url || ''}\nTitle: ${node.title || ''}\nDescription: ${node.description || ''}\nContent:\n${node.content || '(not scraped)'}`;
+      return `[WEB PAGE: "${label}"]\nURL: ${node.url || ''}\nTitle: ${node.title || ''}\nDescription: ${node.description || ''}\nScraped Content:\n${node.content || '(not scraped)'}`;
     case 'code':
       return `[CODE NODE: "${label}"]\nLanguage: ${node.language || 'javascript'}\n\`\`\`${node.language || 'javascript'}\n${node.content || '(empty)'}\n\`\`\``;
     case 'sticky':
@@ -182,6 +182,9 @@ ${sections.join('\n\n')}
 ${edgeBlock}${focusNote}
 
 You have full awareness of everything on the user's canvas. Nodes are organized into groups. When answering questions, reference specific nodes and their group context. Be helpful, creative, and thorough. If asked to create content based on what's on the canvas, use all relevant materials.
+
+IMPORTANT — Web pages and URLs:
+When the canvas contains WEB PAGE nodes, the page content has ALREADY been scraped and is included above as "Scraped Content." You DO have access to this content — read and analyze it directly. Never say you cannot access URLs or web pages when their scraped content is provided in the canvas contents above.
 
 IMPORTANT — Creating canvas nodes:
 If the user asks you to create, generate, or add content as a new note/node on the canvas, you MUST include a special JSON block at the very end of your response (after your main text) in this exact format:
