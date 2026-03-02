@@ -1,6 +1,28 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Copy, Check } from 'lucide-react';
+
+function CodeBlockCopy({ children }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = useCallback(async () => {
+    const text = String(children).replace(/\n$/, '');
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  }, [children]);
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1 px-2 py-0.5 text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
+      title="Copy code"
+    >
+      {copied ? <><Check size={10} className="text-green-400" /> Copied</> : <><Copy size={10} /> Copy</>}
+    </button>
+  );
+}
 
 export default function MarkdownMessage({ content }) {
   return (
@@ -26,8 +48,9 @@ export default function MarkdownMessage({ content }) {
           }
           return (
             <div className="my-2 rounded-lg overflow-hidden border border-white/10">
-              <div className="bg-white/5 px-3 py-1 text-[10px] text-gray-500 border-b border-white/10">
-                {className?.replace('language-', '') || 'code'}
+              <div className="bg-white/5 px-3 py-1 text-[10px] text-gray-500 border-b border-white/10 flex items-center justify-between">
+                <span>{className?.replace('language-', '') || 'code'}</span>
+                <CodeBlockCopy>{children}</CodeBlockCopy>
               </div>
               <pre className="bg-black/30 p-3 overflow-x-auto">
                 <code className="text-xs font-mono text-gray-200 leading-relaxed">{children}</code>

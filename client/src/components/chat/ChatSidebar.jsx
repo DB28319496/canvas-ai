@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Send, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Cpu, Square, Globe, Layers, X } from 'lucide-react';
+import { Send, MessageSquare, ChevronLeft, ChevronRight, Sparkles, Cpu, Square, Globe, Layers, X, Copy, Check } from 'lucide-react';
 import { streamChatMessage, webSearch } from '../../utils/api.js';
 import MarkdownMessage from './MarkdownMessage.jsx';
 import PromptTemplates from './PromptTemplates.jsx';
@@ -13,6 +13,26 @@ function useIsMobile(breakpoint = 768) {
     return () => mq.removeEventListener('change', handler);
   }, [breakpoint]);
   return isMobile;
+}
+
+function CopyButton({ text, className = '' }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard not available */ }
+  }, [text]);
+  return (
+    <button
+      onClick={handleCopy}
+      className={`opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150 flex items-center gap-1 mt-1.5 px-2 py-1 rounded-md text-[11px] text-gray-500 hover:text-gray-300 hover:bg-white/5 ${className}`}
+      title="Copy message"
+    >
+      {copied ? <><Check size={12} className="text-green-400" /> Copied</> : <><Copy size={12} /> Copy</>}
+    </button>
+  );
 }
 
 const models = [
@@ -398,32 +418,37 @@ export default function ChatSidebar({ nodes, edges, isOpen, onToggle, voiceToneS
           {messages.map((msg, i) => (
             <div
               key={i}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group/msg`}
             >
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-accent text-white rounded-br-md'
-                    : 'bg-canvas-bg text-gray-200 rounded-bl-md border border-canvas-border'
-                }`}
-              >
-                {msg.role === 'assistant' ? (
-                  <>
-                    {msg.content ? (
-                      <MarkdownMessage content={msg.content} />
-                    ) : isStreaming && i === messages.length - 1 ? (
-                      <div className="typing-indicator">
-                        <span className="dot" />
-                        <span className="dot" />
-                        <span className="dot" />
-                      </div>
-                    ) : null}
-                    {isStreaming && i === messages.length - 1 && msg.content && (
-                      <span className="streaming-cursor" />
-                    )}
-                  </>
-                ) : (
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
+              <div className={`max-w-[85%] ${msg.role === 'assistant' ? 'relative' : ''}`}>
+                <div
+                  className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                    msg.role === 'user'
+                      ? 'bg-accent text-white rounded-br-md'
+                      : 'bg-canvas-bg text-gray-200 rounded-bl-md border border-canvas-border'
+                  }`}
+                >
+                  {msg.role === 'assistant' ? (
+                    <>
+                      {msg.content ? (
+                        <MarkdownMessage content={msg.content} />
+                      ) : isStreaming && i === messages.length - 1 ? (
+                        <div className="typing-indicator">
+                          <span className="dot" />
+                          <span className="dot" />
+                          <span className="dot" />
+                        </div>
+                      ) : null}
+                      {isStreaming && i === messages.length - 1 && msg.content && (
+                        <span className="streaming-cursor" />
+                      )}
+                    </>
+                  ) : (
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                  )}
+                </div>
+                {msg.role === 'assistant' && msg.content && !(isStreaming && i === messages.length - 1) && (
+                  <CopyButton text={msg.content} />
                 )}
               </div>
             </div>
